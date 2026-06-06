@@ -345,6 +345,38 @@
     .srow .sl { color:#3a6030; font-size:.88em; font-weight:700; letter-spacing:2px; text-transform:uppercase; }
     .srow .sv { font-family:'Bebas Neue',sans-serif; color:var(--green); font-size:1.3em; letter-spacing:2px; }
 
+    /* ─── LEADERBOARD SCREEN ─── */
+    .lb-tabs { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; justify-content:center; }
+    .lb-tab { padding:8px 14px; border:2px solid rgba(76,255,80,.2); border-radius:8px; background:rgba(0,0,0,.5); color:rgba(255,255,255,.45); font-family:'Cinzel',serif; font-size:.72em; letter-spacing:1px; cursor:pointer; transition:all .2s; }
+    .lb-tab:hover { border-color:var(--green); color:var(--green); }
+    .lb-tab.active { border-color:var(--green); color:var(--green); background:rgba(76,255,80,.1); box-shadow:0 0 12px rgba(76,255,80,.15); }
+    .lb-table { width:100%; border-collapse:collapse; margin-bottom:16px; }
+    .lb-table th { font-family:'Cinzel',serif; font-size:.68em; color:var(--green); letter-spacing:2px; text-transform:uppercase; padding:8px 6px; border-bottom:2px solid rgba(76,255,80,.25); text-align:left; }
+    .lb-table th:nth-child(n+3) { text-align:center; }
+    .lb-table td { padding:10px 6px; border-bottom:1px solid rgba(76,255,80,.07); font-family:'Rajdhani',sans-serif; font-size:.95em; color:#8a9a78; text-align:left; }
+    .lb-table td:first-child { font-family:'Bebas Neue',sans-serif; font-size:1.2em; color:var(--gold); width:40px; }
+    .lb-table td:nth-child(2) { color:white; font-weight:700; }
+    .lb-table td:nth-child(3) { font-family:'Bebas Neue',sans-serif; font-size:1.1em; color:var(--ice); letter-spacing:1px; text-align:center; }
+    .lb-table td:nth-child(4) { color:var(--gold); text-align:center; font-weight:700; }
+    .lb-table tr:last-child td { border-bottom:none; }
+    .lb-table tr.lb-highlight td { color:var(--green) !important; background:rgba(76,255,80,.08); }
+    .lb-empty { color:#3a5a30; font-family:'Rajdhani',sans-serif; font-size:1em; padding:30px 0; text-align:center; line-height:1.8; }
+
+    /* ─── NAME ENTRY (victory screen) ─── */
+    .name-entry-section { background:rgba(0,0,0,.55); border:1px solid rgba(76,255,80,.2); border-radius:10px; padding:14px 16px; margin-bottom:16px; }
+    .name-entry-label { font-family:'Rajdhani',sans-serif; font-size:.95em; color:#8a9a78; margin-bottom:10px; }
+    .name-entry-label strong { color:var(--green); }
+    .name-entry-row { display:flex; gap:8px; }
+    #player-name-input { flex:1; padding:11px 14px; font-family:'Rajdhani',sans-serif; font-size:1.1em; font-weight:700; background:rgba(0,0,0,.6); border:2px solid rgba(76,255,80,.25); border-radius:8px; color:white; outline:none; transition:border-color .2s; }
+    #player-name-input:focus { border-color:var(--green); box-shadow:0 0 10px rgba(76,255,80,.15); }
+    #player-name-input::placeholder { color:#2a4a22; }
+    #player-name-input:disabled { opacity:.5; }
+    .save-score-btn { padding:11px 18px; font-family:'Cinzel',serif; font-size:.82em; font-weight:900; letter-spacing:2px; background:linear-gradient(180deg,#42e455,#1d8b2a); border:none; border-radius:8px; color:#001a05; cursor:pointer; transition:transform .1s; white-space:nowrap; }
+    .save-score-btn:hover:not(:disabled) { transform:scale(1.04); }
+    .save-score-btn:disabled { opacity:.4; cursor:default; }
+    #name-entry-msg { font-family:'Rajdhani',sans-serif; font-size:.9em; font-weight:700; margin-top:8px; min-height:22px; }
+    #view-lb-btn { display:none; margin-top:10px; }
+
     /* Warrior recruit table */
     .recruit-table { width:100%; border-collapse:collapse; margin-top:10px; }
     .recruit-table th { font-family:'Cinzel',serif; font-size:.72em; color:var(--green); letter-spacing:2px; text-transform:uppercase; padding:8px 6px; border-bottom:2px solid rgba(76,255,80,.25); text-align:center; }
@@ -392,7 +424,8 @@
       Can you survive all 5 waves?
     </p>
     <button class="big-btn btn-green" style="margin-bottom:12px" onclick="showScreen('instructions')">📖 &nbsp;How to Play — Read This First!</button>
-    <button class="big-btn" style="background:linear-gradient(180deg,#0060aa,#003d70);color:white;box-shadow:0 4px 0 #002244" onclick="showScreen('difficulty')">⚔️ &nbsp;Play Now</button>
+    <button class="big-btn" style="background:linear-gradient(180deg,#0060aa,#003d70);color:white;box-shadow:0 4px 0 #002244;margin-bottom:12px" onclick="showScreen('difficulty')">⚔️ &nbsp;Play Now</button>
+    <button class="big-btn" style="background:linear-gradient(180deg,#6b4800,#3d2800);color:var(--gold);border:2px solid rgba(245,197,24,.3);box-shadow:0 4px 0 #1a1000" onclick="openLeaderboard('medium')">🏆 &nbsp;Leaderboard</button>
   </div>
 
   <!-- ════ 2. INSTRUCTIONS ════ -->
@@ -564,6 +597,7 @@
     <div class="hud">
       <div class="hud-box"><div class="hud-label">💰 Gold</div><div class="hud-val gold" id="gold-disp">30</div></div>
       <div class="hud-box"><div class="hud-label">Wave</div><div class="hud-val" id="wave-disp">1/5</div></div>
+      <div class="hud-box"><div class="hud-label">⏱ Time</div><div class="hud-val" id="game-time-disp">0:00</div></div>
       <div class="hud-box"><div class="hud-label">Score</div><div class="hud-val" id="score-disp">0</div></div>
       <div class="hud-box"><div class="hud-label">Enemies</div><div class="hud-val" id="enemy-count-disp">0</div></div>
     </div>
@@ -685,13 +719,37 @@
     <div class="end-title victory">Victory!</div>
     <div class="end-sub">You conquered all 5 waves — you are a legend!</div>
     <div class="end-stats">
-      <div class="srow"><span class="sl">Final Score</span>   <span class="sv" id="v-score">0</span></div>
+      <div class="srow"><span class="sl">⏱ Your Time</span>   <span class="sv" id="v-time">0:00</span></div>
+      <div class="srow"><span class="sl">Final Score</span>    <span class="sv" id="v-score">0</span></div>
       <div class="srow"><span class="sl">Enemies Defeated</span><span class="sv" id="v-kills">0</span></div>
-      <div class="srow"><span class="sl">Gold Earned</span>   <span class="sv" id="v-gold">0</span></div>
+      <div class="srow"><span class="sl">Gold Earned</span>    <span class="sv" id="v-gold">0</span></div>
       <div class="srow"><span class="sl">Base HP Remaining</span><span class="sv" id="v-hp">0</span></div>
     </div>
-    <button class="big-btn btn-green" onclick="showScreen('menu')" style="margin-top:16px">⚔️ Play Again</button>
+    <div class="name-entry-section">
+      <div class="name-entry-label">Add your name to the leaderboard:</div>
+      <div class="name-entry-row">
+        <input id="player-name-input" type="text" placeholder="Your name" maxlength="20"/>
+        <button class="save-score-btn" id="save-score-btn" onclick="submitScore()">✓ Save</button>
+      </div>
+      <div id="name-entry-msg"></div>
+      <button class="big-btn" id="view-lb-btn" style="background:linear-gradient(180deg,#6b4800,#3d2800);color:var(--gold);border:2px solid rgba(245,197,24,.3);margin-top:10px" onclick="openLeaderboard(difficulty)">🏆 View Leaderboard</button>
+    </div>
+    <button class="big-btn btn-green" onclick="showScreen('difficulty')" style="margin-bottom:12px">⚔️ Play Again</button>
     <button class="back-btn" onclick="showScreen('intro')">← Back to Start</button>
+  </div>
+
+  <!-- ════ 10. LEADERBOARD ════ -->
+  <div id="leaderboard" class="screen">
+    <div class="screen-title">🏆 Leaderboard</div>
+    <div class="screen-sub">Top 10 Fastest Times</div>
+    <div class="lb-tabs">
+      <button class="lb-tab" data-diff="easy"       onclick="renderLeaderboard('easy')">🟢 Easy</button>
+      <button class="lb-tab" data-diff="medium"     onclick="renderLeaderboard('medium')">🟡 Medium</button>
+      <button class="lb-tab" data-diff="hard"        onclick="renderLeaderboard('hard')">🟠 Hard</button>
+      <button class="lb-tab" data-diff="impossible" onclick="renderLeaderboard('impossible')">☠️ Impossible</button>
+    </div>
+    <div id="lb-table-wrap"></div>
+    <button class="back-btn" onclick="showScreen('intro')">← Back to Home</button>
   </div>
 
   <script>
@@ -759,6 +817,7 @@
     let approachVal=0, approachMax=0, approachInterval=null;
     let answerVal=0,  answerMax=0,  answerInterval=null;
     let potions=0, answerStreak=0, potionMode=false, potionVal=0, potionMax=0, potionInterval=null;
+    let gameStartTime=0, gameElapsedSecs=0, gameTimerInterval=null;
 
     // ══════════════════════════════════════
     //  HELPERS
@@ -786,6 +845,93 @@
     function pickOp(){
       if(mathMode!=='all') return mathMode;
       return ['addition','subtraction','multiply','division'][rnd(0,3)];
+    }
+
+    // ══════════════════════════════════════
+    //  GAME TIMER
+    // ══════════════════════════════════════
+    function formatTime(secs){
+      const m=Math.floor(secs/60), s=secs%60;
+      return `${m}:${s.toString().padStart(2,'0')}`;
+    }
+    function startGameTimer(){
+      clearInterval(gameTimerInterval);
+      gameStartTime=Date.now(); gameElapsedSecs=0;
+      gameTimerInterval=setInterval(()=>{
+        gameElapsedSecs=Math.floor((Date.now()-gameStartTime)/1000);
+        const el=document.getElementById('game-time-disp');
+        if(el) el.textContent=formatTime(gameElapsedSecs);
+      },1000);
+    }
+    function stopGameTimer(){
+      clearInterval(gameTimerInterval);
+      gameElapsedSecs=Math.floor((Date.now()-gameStartTime)/1000);
+    }
+
+    // ══════════════════════════════════════
+    //  LEADERBOARD
+    // ══════════════════════════════════════
+    function getLB(){
+      try{ return JSON.parse(localStorage.getItem('speedmath_lb')||'{}'); }
+      catch(e){ return {}; }
+    }
+    function saveLB(lb){ localStorage.setItem('speedmath_lb',JSON.stringify(lb)); }
+
+    function addScore(name,secs,sc,diff){
+      const lb=getLB();
+      lb[diff]=lb[diff]||[];
+      const entry={name:name.trim()||'Anonymous',time:secs,score:sc};
+      lb[diff].push(entry);
+      lb[diff].sort((a,b)=>a.time-b.time);
+      lb[diff]=lb[diff].slice(0,10);
+      saveLB(lb);
+      return lb[diff].findIndex(e=>e.time===secs&&e.name===entry.name);
+    }
+
+    function submitScore(){
+      const nameEl=document.getElementById('player-name-input');
+      const name=nameEl.value.trim()||'Anonymous';
+      const idx=addScore(name,gameElapsedSecs,score,difficulty);
+      const msgEl=document.getElementById('name-entry-msg');
+      if(idx>=0){
+        msgEl.style.color='#4cff50';
+        msgEl.textContent=`🏆 You are #${idx+1} on the leaderboard!`;
+      } else {
+        msgEl.style.color='#f5c518';
+        msgEl.textContent='Not in the top 10 yet — keep practising!';
+      }
+      nameEl.disabled=true;
+      document.getElementById('save-score-btn').disabled=true;
+      document.getElementById('view-lb-btn').style.display='block';
+    }
+
+    function renderLeaderboard(diff){
+      diff=diff||'medium';
+      document.querySelectorAll('.lb-tab').forEach(t=>{
+        t.classList.toggle('active',t.dataset.diff===diff);
+      });
+      const lb=getLB();
+      const board=lb[diff]||[];
+      const wrap=document.getElementById('lb-table-wrap');
+      if(board.length===0){
+        wrap.innerHTML='<div class="lb-empty">No scores yet for this difficulty.<br>Be the first to set a record! 🏆</div>';
+        return;
+      }
+      const medals=['🥇','🥈','🥉'];
+      wrap.innerHTML=`<table class="lb-table">
+        <thead><tr><th>#</th><th>Name</th><th>Time</th><th>Score</th></tr></thead>
+        <tbody>${board.map((e,i)=>`<tr>
+          <td>${medals[i]||i+1}</td>
+          <td>${e.name}</td>
+          <td>${formatTime(e.time)}</td>
+          <td>${e.score}</td>
+        </tr>`).join('')}</tbody>
+      </table>`;
+    }
+
+    function openLeaderboard(diff){
+      renderLeaderboard(diff||'medium');
+      showScreen('leaderboard');
     }
 
     // ══════════════════════════════════════
@@ -849,7 +995,7 @@
       document.getElementById('actions-panel').style.opacity='1';
       document.getElementById('action-hint').textContent='⚡ Click an action button to fight!';
       spawnWave(0); render(); updateHUD();
-      startApproachTimer();
+      startApproachTimer(); startGameTimer();
     }
 
     // ══════════════════════════════════════
@@ -1337,7 +1483,7 @@
     //  GAME END
     // ══════════════════════════════════════
     function gameOver(){
-      stopApproachTimer(); stopAnswerTimer(); panelOpen=false;
+      stopApproachTimer(); stopAnswerTimer(); stopGameTimer(); panelOpen=false;
       document.getElementById('go-score').textContent=score;
       document.getElementById('go-waves').textContent=waveIdx;
       document.getElementById('go-kills').textContent=totalKills;
@@ -1346,16 +1492,23 @@
     }
 
     function victoryScreen(){
-      stopApproachTimer(); stopAnswerTimer(); panelOpen=false;
+      stopApproachTimer(); stopAnswerTimer(); stopGameTimer(); panelOpen=false;
+      document.getElementById('v-time').textContent=formatTime(gameElapsedSecs);
       document.getElementById('v-score').textContent=score;
       document.getElementById('v-kills').textContent=totalKills;
       document.getElementById('v-gold').textContent=totalGoldEarned;
       document.getElementById('v-hp').textContent=`${baseHP}/${maxBaseHP}`;
+      // Reset name entry form
+      document.getElementById('player-name-input').value='';
+      document.getElementById('player-name-input').disabled=false;
+      document.getElementById('save-score-btn').disabled=false;
+      document.getElementById('name-entry-msg').textContent='';
+      document.getElementById('view-lb-btn').style.display='none';
       showScreen('victory');
     }
 
     function retreat(){
-      stopApproachTimer(); stopAnswerTimer();
+      stopApproachTimer(); stopAnswerTimer(); stopGameTimer();
       panelOpen=false; busy=false;
       showScreen('menu');
     }
