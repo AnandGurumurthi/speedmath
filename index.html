@@ -23,8 +23,8 @@
     body {
       font-family:'Rajdhani', sans-serif;
       background:#02040a; min-height:100vh;
-      display:flex; align-items:center; justify-content:center;
-      color:white; overflow:hidden;
+      display:flex; align-items:flex-start; justify-content:center;
+      color:white; overflow-y:auto; overflow-x:hidden;
     }
     .sky { position:fixed; inset:0; z-index:0;
       background:radial-gradient(ellipse 90% 55% at 50% 0%,#070e1c,transparent 70%),
@@ -51,7 +51,7 @@
       box-shadow:0 0 18px rgba(255,255,120,.3),0 0 50px rgba(255,255,100,.12),0 0 90px rgba(255,255,80,.06); }
 
     /* ── Screens ── */
-    .screen { display:none; width:100%; max-width:720px; padding:20px; position:relative; z-index:1; text-align:center; }
+    .screen { display:none; width:100%; max-width:720px; padding:20px 20px 80px; position:relative; z-index:1; text-align:center; }
     .screen.active { display:block; }
     .screen.fadein { animation:fadeUp .28s cubic-bezier(.22,1,.36,1); }
     @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
@@ -344,6 +344,17 @@
     .srow:last-child { border-bottom:none; }
     .srow .sl { color:#3a6030; font-size:.88em; font-weight:700; letter-spacing:2px; text-transform:uppercase; }
     .srow .sv { font-family:'Bebas Neue',sans-serif; color:var(--green); font-size:1.3em; letter-spacing:2px; }
+
+    /* Warrior recruit table */
+    .recruit-table { width:100%; border-collapse:collapse; margin-top:10px; }
+    .recruit-table th { font-family:'Cinzel',serif; font-size:.72em; color:var(--green); letter-spacing:2px; text-transform:uppercase; padding:8px 6px; border-bottom:2px solid rgba(76,255,80,.25); text-align:center; }
+    .recruit-table th:first-child { text-align:left; }
+    .recruit-table td { font-family:'Rajdhani',sans-serif; font-size:.92em; padding:8px 6px; text-align:center; border-bottom:1px solid rgba(76,255,80,.07); color:#9aaa88; }
+    .recruit-table td:first-child { text-align:left; color:white; font-weight:700; }
+    .recruit-table tr:last-child td { border-bottom:none; }
+    .recruit-table .qs { color:#00bfff; font-weight:700; }
+    .recruit-table .tm { color:var(--gold); font-weight:700; }
+    .recruit-table .tm.dragon { color:#ff6b00; }
   </style>
 </head>
 <body>
@@ -380,7 +391,7 @@
       Answer maths questions to command your army and defeat the enemies.<br>
       Can you survive all 5 waves?
     </p>
-    <button class="big-btn btn-green" style="margin-bottom:12px" onclick="showScreen('instructions')">📖 &nbsp;How to Play</button>
+    <button class="big-btn btn-green" style="margin-bottom:12px" onclick="showScreen('instructions')">📖 &nbsp;How to Play — Read This First!</button>
     <button class="big-btn" style="background:linear-gradient(180deg,#0060aa,#003d70);color:white;box-shadow:0 4px 0 #002244" onclick="showScreen('difficulty')">⚔️ &nbsp;Play Now</button>
   </div>
 
@@ -433,6 +444,20 @@
           <span class="wd">60 💰</span>
         </div>
         <div class="tip-box">💡 Tip: The warrior at the front of your army attacks first. Put your strongest warriors in front!</div>
+        <p style="margin-top:12px;margin-bottom:6px;font-size:.8em;color:#5a7a50">To recruit a stronger warrior, you must answer MORE questions correctly in a row:</p>
+        <table class="recruit-table">
+          <thead>
+            <tr><th>Warrior</th><th>Questions</th><th>Extra Time</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>⚔️ Attack</td>  <td class="qs">1</td><td class="tm">normal</td></tr>
+            <tr><td>🗡️ Soldier</td> <td class="qs">1</td><td class="tm">normal</td></tr>
+            <tr><td>🏹 Archer</td>  <td class="qs">2</td><td class="tm">+3 sec</td></tr>
+            <tr><td>🔮 Mage</td>    <td class="qs">3</td><td class="tm">+6 sec</td></tr>
+            <tr><td>🏇 Charioteer</td><td class="qs">4</td><td class="tm">+9 sec</td></tr>
+            <tr><td>🐉 Dragon</td>  <td class="qs">5</td><td class="tm dragon">+12 sec</td></tr>
+          </tbody>
+        </table>
       </div>
 
       <div class="instr-section">
