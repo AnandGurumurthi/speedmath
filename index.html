@@ -869,69 +869,67 @@
     }
 
     // ══════════════════════════════════════
-    //  LEADERBOARD
+    //  LEADERBOARD  (Supabase via /api/scores)
     // ══════════════════════════════════════
-    function getLB(){
-      try{ return JSON.parse(localStorage.getItem('speedmath_lb')||'{}'); }
-      catch(e){ return {}; }
-    }
-    function saveLB(lb){ localStorage.setItem('speedmath_lb',JSON.stringify(lb)); }
-
-    function addScore(name,secs,sc,diff){
-      const lb=getLB();
-      lb[diff]=lb[diff]||[];
-      const entry={name:name.trim()||'Anonymous',time:secs,score:sc};
-      lb[diff].push(entry);
-      lb[diff].sort((a,b)=>a.time-b.time);
-      lb[diff]=lb[diff].slice(0,10);
-      saveLB(lb);
-      return lb[diff].findIndex(e=>e.time===secs&&e.name===entry.name);
-    }
-
-    function submitScore(){
+    async function submitScore(){
       const nameEl=document.getElementById('player-name-input');
-      const name=nameEl.value.trim()||'Anonymous';
-      const idx=addScore(name,gameElapsedSecs,score,difficulty);
+      const btn=document.getElementById('save-score-btn');
       const msgEl=document.getElementById('name-entry-msg');
-      if(idx>=0){
-        msgEl.style.color='#4cff50';
-        msgEl.textContent=`🏆 You are #${idx+1} on the leaderboard!`;
-      } else {
-        msgEl.style.color='#f5c518';
-        msgEl.textContent='Not in the top 10 yet — keep practising!';
+      const name=nameEl.value.trim()||'Anonymous';
+      nameEl.disabled=true; btn.disabled=true; btn.textContent='Saving…';
+      try{
+        const res=await fetch('/api/scores',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({name,time_secs:gameElapsedSecs,score,difficulty}),
+        });
+        const data=await res.json();
+        if(data.rank>=0){
+          msgEl.style.color='#4cff50';
+          msgEl.textContent=`🏆 You are #${data.rank+1} on the leaderboard!`;
+        } else {
+          msgEl.style.color='#f5c518';
+          msgEl.textContent='Not in the top 10 yet — keep practising!';
+        }
+      } catch(e){
+        msgEl.style.color='#e91e63';
+        msgEl.textContent='Could not save — check your connection.';
       }
-      nameEl.disabled=true;
-      document.getElementById('save-score-btn').disabled=true;
       document.getElementById('view-lb-btn').style.display='block';
     }
 
-    function renderLeaderboard(diff){
+    async function renderLeaderboard(diff){
       diff=diff||'medium';
       document.querySelectorAll('.lb-tab').forEach(t=>{
         t.classList.toggle('active',t.dataset.diff===diff);
       });
-      const lb=getLB();
-      const board=lb[diff]||[];
       const wrap=document.getElementById('lb-table-wrap');
-      if(board.length===0){
-        wrap.innerHTML='<div class="lb-empty">No scores yet for this difficulty.<br>Be the first to set a record! 🏆</div>';
-        return;
+      wrap.innerHTML='<div class="lb-empty">Loading…</div>';
+      try{
+        const res=await fetch(`/api/scores?difficulty=${diff}`);
+        const board=await res.json();
+        if(!Array.isArray(board)||board.length===0){
+          wrap.innerHTML='<div class="lb-empty">No scores yet for this difficulty.<br>Be the first to set a record! 🏆</div>';
+          return;
+        }
+        const medals=['🥇','🥈','🥉'];
+        wrap.innerHTML=`<table class="lb-table">
+          <thead><tr><th>#</th><th>Name</th><th>Time</th><th>Score</th></tr></thead>
+          <tbody>${board.map((e,i)=>`<tr>
+            <td>${medals[i]||i+1}</td>
+            <td>${e.name}</td>
+            <td>${formatTime(e.time_secs)}</td>
+            <td>${e.score}</td>
+          </tr>`).join('')}</tbody>
+        </table>`;
+      } catch(e){
+        wrap.innerHTML='<div class="lb-empty">Could not load scores — check your connection.</div>';
       }
-      const medals=['🥇','🥈','🥉'];
-      wrap.innerHTML=`<table class="lb-table">
-        <thead><tr><th>#</th><th>Name</th><th>Time</th><th>Score</th></tr></thead>
-        <tbody>${board.map((e,i)=>`<tr>
-          <td>${medals[i]||i+1}</td>
-          <td>${e.name}</td>
-          <td>${formatTime(e.time)}</td>
-          <td>${e.score}</td>
-        </tr>`).join('')}</tbody>
-      </table>`;
     }
 
     function openLeaderboard(diff){
-      renderLeaderboard(diff||'medium');
       showScreen('leaderboard');
+      renderLeaderboard(diff||'medium');
     }
 
     // ══════════════════════════════════════
