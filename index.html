@@ -225,6 +225,31 @@
     .flash-side { animation:flash-red .3s ease; }
     @keyframes flash-red { 0%,100%{background:transparent} 50%{background:rgba(180,0,0,.2)} }
 
+    /* ══ POTIONS ══ */
+    .castle-potion-col { display:flex; flex-direction:column; align-items:center; gap:5px; flex-shrink:0; }
+    #castle-target { transition:filter .2s; }
+    #potion-btn {
+      background:linear-gradient(180deg,#5a0080,#380060); border:2px solid #b040f0;
+      border-radius:8px; color:#dd88ff; cursor:pointer; white-space:nowrap;
+      font-family:'Rajdhani',sans-serif; font-size:.75em; font-weight:700;
+      padding:4px 8px; letter-spacing:1px;
+      transition:transform .1s,box-shadow .2s,border-color .2s;
+    }
+    #potion-btn:hover:not(:disabled) { transform:scale(1.1); box-shadow:0 0 14px rgba(180,0,255,.5); border-color:#dd88ff; }
+    #potion-btn:disabled { opacity:.3; cursor:not-allowed; }
+
+    /* Potion mode countdown bar */
+    .potion-bar-wrap { display:none; margin-bottom:8px; }
+    .potion-bar-wrap.show { display:block; animation:fadeUp .2s ease; }
+    .potion-bar-lbl { font-family:'Cinzel',serif; font-size:.55em; color:#bb55ff; letter-spacing:2px; text-transform:uppercase; margin-bottom:5px; text-align:center; }
+    .potion-bar-track { width:100%; height:12px; background:rgba(80,0,120,.5); border:1px solid rgba(160,0,255,.3); border-radius:6px; overflow:hidden; }
+    .potion-bar-fill { height:100%; background:linear-gradient(90deg,#8800ff,#cc44ff); border-radius:6px; transition:width .1s linear; box-shadow:0 0 8px rgba(150,0,255,.6); }
+
+    /* Unit cards & castle pulsing in potion mode */
+    .potion-mode .uc { cursor:pointer !important; animation:potion-pulse .9s ease-in-out infinite !important; }
+    .potion-mode #castle-target { cursor:pointer; animation:potion-pulse .9s ease-in-out infinite; }
+    @keyframes potion-pulse { 0%,100%{filter:brightness(1) drop-shadow(0 0 2px rgba(120,255,120,.2))} 50%{filter:brightness(1.35) drop-shadow(0 0 10px rgba(100,255,120,.9))} }
+
     /* Wave overlay */
     .wave-overlay { position:absolute; inset:0; display:none; background:rgba(0,0,0,.87); border-radius:12px; flex-direction:column; align-items:center; justify-content:center; z-index:10; }
     .wave-overlay.show { display:flex; animation:fadeUp .3s ease; }
@@ -412,7 +437,20 @@
 
       <div class="instr-section">
         <h3>💰 Gold</h3>
-        <p>You earn gold every time you answer a maths question correctly. Spend gold to recruit new warriors. You can have up to 5 warriors at once.</p>
+        <p>You earn gold every time you answer a maths question correctly. Spend gold to recruit new warriors. You can have up to 4 warriors at once.</p>
+      </div>
+
+      <div class="instr-section">
+        <h3>🧪 Healing Potions</h3>
+        <p style="margin-bottom:8px">Answer <strong style="color:#4cff50">4 questions in a row correctly</strong> to earn a healing potion! You can store up to 5 potions.</p>
+        <ul>
+          <li>Tap the <strong style="color:#dd88ff">🧪 button</strong> next to your castle to open potion mode</li>
+          <li>You have <strong>4 seconds</strong> to choose where to use your potions</li>
+          <li>Tap a <strong style="color:#4cff50">warrior</strong> → that warrior is fully healed!</li>
+          <li>Tap the <strong style="color:#4cff50">🏰 castle</strong> → restores 30% of castle HP</li>
+          <li>You can use multiple potions in one go if you have them!</li>
+        </ul>
+        <div class="tip-box">💡 Tip: Your castle also gets a free 20% HP heal after every wave you survive!</div>
       </div>
 
     </div>
@@ -516,8 +554,15 @@
         <div class="approach-lbl">⚠️ Enemy Approaching...</div>
         <div class="approach-track"><div class="approach-fill" id="approach-fill" style="width:0%"></div></div>
       </div>
+      <div id="potion-bar-wrap" class="potion-bar-wrap">
+        <div class="potion-bar-lbl">⚗️ Tap a warrior or the castle to heal! (<span id="potion-secs">4</span>s left · 🧪×<span id="potion-bar-count">0</span>)</div>
+        <div class="potion-bar-track"><div id="potion-bar-fill" class="potion-bar-fill" style="width:100%"></div></div>
+      </div>
       <div class="units-row">
-        <span class="bf-base">🏰</span>
+        <div class="castle-potion-col">
+          <span class="bf-base" id="castle-target" onclick="potionClickCastle()">🏰</span>
+          <button id="potion-btn" onclick="clickPotion()" disabled>🧪×<span id="potion-count">0</span></button>
+        </div>
         <div class="bf-side" id="player-army"></div>
         <span class="bf-vs">VS</span>
         <div class="bf-side" id="enemy-army" style="flex-direction:row-reverse"></div>
@@ -639,11 +684,11 @@
     const MATH_LABELS = { addition:'➕ Addition', subtraction:'➖ Subtraction', multiply:'✖️ Multiply', division:'➗ Division', all:'⚡ All Operations' };
 
     const UNIT_DEFS = {
-      soldier:    { name:'Soldier',     emoji:'🗡️', hp:4, dmg:1,  cost:10, color:'#00bfff', mathScale:1.0, mathLabel:'🟢 Easy'   },
-      archer:     { name:'Archer',      emoji:'🏹', hp:3, dmg:2,  cost:25, color:'#39d353', mathScale:1.5, mathLabel:'🟡 Medium' },
-      mage:       { name:'Mage',        emoji:'🔮', hp:2, dmg:4,  cost:45, color:'#bb86fc', mathScale:3.0, mathLabel:'🔴 Hard'   },
-      charioteer: { name:'Charioteer',  emoji:'🏇', hp:6, dmg:2,  cost:60, color:'#f5c518', mathScale:2.0, mathLabel:'🟠 Tough'  },
-      dragon:     { name:'Dragon Rider',emoji:'🐉', hp:5, dmg:7,  cost:90, color:'#ff4500', mathScale:3.5, mathLabel:'🔥 Epic'   },
+      soldier:    { name:'Soldier',     emoji:'🗡️', hp:4, dmg:1,  cost:10, color:'#00bfff', mathScale:1.0, mathLabel:'🟢 Easy',   recruitQuestions:1, bonusSecs:0  },
+      archer:     { name:'Archer',      emoji:'🏹', hp:3, dmg:2,  cost:25, color:'#39d353', mathScale:1.5, mathLabel:'🟡 Medium', recruitQuestions:2, bonusSecs:3  },
+      mage:       { name:'Mage',        emoji:'🔮', hp:2, dmg:4,  cost:45, color:'#bb86fc', mathScale:3.0, mathLabel:'🔴 Hard',   recruitQuestions:3, bonusSecs:6  },
+      charioteer: { name:'Charioteer',  emoji:'🏇', hp:6, dmg:2,  cost:60, color:'#f5c518', mathScale:2.0, mathLabel:'🟠 Tough',  recruitQuestions:4, bonusSecs:9  },
+      dragon:     { name:'Dragon Rider',emoji:'🐉', hp:5, dmg:7,  cost:90, color:'#ff4500', mathScale:3.5, mathLabel:'🔥 Epic',   recruitQuestions:5, bonusSecs:12 },
     };
 
     // Which wave number must be completed before each warrior unlocks (0 = available from start)
@@ -674,6 +719,9 @@
     ];
 
     const MAX_ARMY = 4;
+    const MAX_POTIONS = 5;
+    const POTION_CASTLE_PCT = 0.30;  // 30% of max HP per potion on castle
+    const WAVE_HEAL_PCT     = 0.20;  // 20% of max HP free heal after each wave
 
     // ══════════════════════════════════════
     //  STATE
@@ -682,9 +730,10 @@
     let myUnits, enemies, uidCounter;
     let selectedDiff = 'medium', selectedMath = 'all';
     let difficulty, mathMode, currentAnswer, choiceValues = [];
-    let panelOpen = false, pendingAction = '', busy = false;
+    let panelOpen = false, pendingAction = '', busy = false, recruitStep = 0;
     let approachVal=0, approachMax=0, approachInterval=null;
     let answerVal=0,  answerMax=0,  answerInterval=null;
+    let potions=0, answerStreak=0, potionMode=false, potionVal=0, potionMax=0, potionInterval=null;
 
     // ══════════════════════════════════════
     //  HELPERS
@@ -764,6 +813,7 @@
       gold=d.startGold; baseHP=maxBaseHP=d.baseHP;
       waveIdx=0; score=0; totalKills=0; totalGoldEarned=d.startGold;
       myUnits=[]; enemies=[]; uidCounter=0; busy=false; panelOpen=false;
+      potions=0; answerStreak=0; potionMode=false; updatePotionDisplay();
 
       // Start with 4 free soldiers
       for(let i=0;i<4;i++)
@@ -786,7 +836,7 @@
       approachVal = 0;
       updateApproachBar();
       approachInterval = setInterval(()=>{
-        if(panelOpen||busy) return;
+        if(panelOpen||busy||potionMode) return;
         approachVal++;
         updateApproachBar();
         if(approachVal>=approachMax){
@@ -816,9 +866,9 @@
     // ══════════════════════════════════════
     //  ANSWER TIMER
     // ══════════════════════════════════════
-    function startAnswerTimer(){
+    function startAnswerTimer(bonusSecs=0){
       clearInterval(answerInterval);
-      answerMax=DIFF[difficulty].answerSecs*10;
+      answerMax=(DIFF[difficulty].answerSecs+bonusSecs)*10;
       answerVal=answerMax;
       updateAnswerBar();
       answerInterval=setInterval(()=>{
@@ -844,6 +894,7 @@
       const correctIdx=choiceValues.indexOf(currentAnswer);
       if(correctIdx>=0) document.getElementById('choice-'+correctIdx).classList.add('correct');
       showMpFeedback(`Time's up! The answer was ${currentAnswer}.`,'damage');
+      answerStreak=0;
       enemyHitsPlayer();
       setTimeout(closeMathPanel,1500);
     }
@@ -870,14 +921,11 @@
     }
 
     function openMathPanel(type){
-      panelOpen=true;
+      panelOpen=true; recruitStep=0;
       generateQuestion(type);
-      startAnswerTimer();
-      const actionLabels={
-        attack:'⚔️ Attacking!', soldier:'🗡️ Recruiting a Soldier',
-        archer:'🏹 Recruiting an Archer', mage:'🔮 Recruiting a Mage', charioteer:'🏇 Recruiting a Charioteer'
-      };
-      document.getElementById('mp-action-lbl').textContent=actionLabels[type]||'⚔️ Action';
+      const bonus = type!=='attack' && UNIT_DEFS[type] ? UNIT_DEFS[type].bonusSecs : 0;
+      startAnswerTimer(bonus);
+      updateRecruitLabel(type);
       document.getElementById('mp-feedback').textContent='';
       document.getElementById('mp-feedback').className='mp-feedback';
       document.getElementById('math-panel').classList.add('open');
@@ -885,8 +933,17 @@
       document.getElementById('action-hint').textContent='📝 Tap the correct answer — or press Cancel to go back!';
     }
 
+    function updateRecruitLabel(type){
+      if(type==='attack'){ document.getElementById('mp-action-lbl').textContent='⚔️ Attacking!'; return; }
+      const def=UNIT_DEFS[type];
+      const total=def.recruitQuestions;
+      const step=recruitStep+1;
+      const stepTxt = total>1 ? ` — Step ${step} of ${total}` : '';
+      document.getElementById('mp-action-lbl').textContent=`${def.emoji} Recruiting ${def.name}${stepTxt}`;
+    }
+
     function closeMathPanel(){
-      panelOpen=false; stopAnswerTimer();
+      panelOpen=false; recruitStep=0; stopAnswerTimer();
       document.getElementById('math-panel').classList.remove('open');
       document.getElementById('actions-panel').style.opacity='1';
       document.getElementById('action-hint').textContent='⚡ Click an action button to fight!';
@@ -945,14 +1002,37 @@
         document.getElementById('choice-'+idx).classList.add('correct');
         const earned=DIFF[difficulty].goldPerQ;
         gold+=earned; totalGoldEarned+=earned; score+=5;
+        answerStreak++;
+        if(answerStreak>0 && answerStreak%4===0 && potions<MAX_POTIONS){
+          potions++; updatePotionDisplay();
+          showBattleMsg(`🧪 Potion earned! (${potions}/${MAX_POTIONS}) — ${4-((answerStreak)%4)||4} more answers for next one`,'gold');
+        }
         updateHUD();
-        const action=pendingAction;
-        setTimeout(()=>{ closeMathPanel(); executeAction(action); },600);
+        const type=pendingAction;
+        const total=type!=='attack'&&UNIT_DEFS[type]?UNIT_DEFS[type].recruitQuestions:1;
+        if(type!=='attack' && recruitStep<total-1){
+          // More questions to go — advance to next step
+          recruitStep++;
+          showMpFeedback(`Step ${recruitStep} done! Keep going! 💪`,'hit');
+          setTimeout(()=>{
+            generateQuestion(type);
+            startAnswerTimer(UNIT_DEFS[type].bonusSecs);
+            updateRecruitLabel(type);
+            document.getElementById('mp-feedback').textContent='';
+            document.getElementById('mp-feedback').className='mp-feedback';
+          },700);
+        } else {
+          // All steps complete — recruit!
+          setTimeout(()=>{ closeMathPanel(); executeAction(type); },600);
+        }
       } else {
         document.getElementById('choice-'+idx).classList.add('wrong');
         const correctIdx=choiceValues.indexOf(currentAnswer);
         if(correctIdx>=0) document.getElementById('choice-'+correctIdx).classList.add('correct');
-        showMpFeedback(`Wrong! The answer was ${currentAnswer}.`,'damage');
+        const total=pendingAction!=='attack'&&UNIT_DEFS[pendingAction]?UNIT_DEFS[pendingAction].recruitQuestions:1;
+        const failMsg=total>1?`Wrong! Lost on step ${recruitStep+1} of ${total}. Answer was ${currentAnswer}.`:`Wrong! The answer was ${currentAnswer}.`;
+        showMpFeedback(failMsg,'damage');
+        answerStreak=0;
         enemyHitsPlayer();
         setTimeout(closeMathPanel,1500);
       }
@@ -1058,6 +1138,12 @@
       gold+=bonus; totalGoldEarned+=bonus; score+=bonus*10;
       updateHUD();
       if(waveIdx>=WAVES.length-1){ setTimeout(victoryScreen,800); return; }
+      // Auto-heal castle after each wave
+      if(baseHP<maxBaseHP){
+        const heal=Math.ceil(maxBaseHP*WAVE_HEAL_PCT);
+        baseHP=Math.min(maxBaseHP,baseHP+heal);
+        updateHUD();
+      }
       const ov=document.getElementById('wave-overlay');
       document.getElementById('wave-msg').textContent=`Wave ${waveIdx+1} Complete! 🏆`;
       document.getElementById('wave-reward').textContent=`+${bonus} Gold Bonus!`;
@@ -1074,6 +1160,71 @@
         spawnWave(waveIdx);
         render(); startApproachTimer(); busy=false;
       },2600);
+    }
+
+    // ══════════════════════════════════════
+    //  POTIONS
+    // ══════════════════════════════════════
+    function updatePotionDisplay(){
+      const btn=document.getElementById('potion-btn');
+      const cnt=document.getElementById('potion-count');
+      if(cnt) cnt.textContent=potions;
+      if(btn){ btn.disabled=(potions<=0||potionMode); }
+      const barCnt=document.getElementById('potion-bar-count');
+      if(barCnt) barCnt.textContent=potions;
+    }
+
+    function clickPotion(){
+      if(panelOpen||busy||potionMode||potions<=0) return;
+      potionMode=true;
+      document.getElementById('battlefield').classList.add('potion-mode');
+      document.getElementById('potion-bar-wrap').classList.add('show');
+      updatePotionDisplay();
+      // 4-second countdown
+      potionMax=40; potionVal=potionMax;
+      updatePotionBar();
+      potionInterval=setInterval(()=>{
+        potionVal=Math.max(0,potionVal-1);
+        updatePotionBar();
+        const secsLeft=Math.ceil(potionVal/10);
+        const secsEl=document.getElementById('potion-secs');
+        if(secsEl) secsEl.textContent=secsLeft;
+        if(potionVal<=0){ clearInterval(potionInterval); exitPotionMode(); }
+      },100);
+    }
+
+    function updatePotionBar(){
+      const fill=document.getElementById('potion-bar-fill');
+      if(fill) fill.style.width=(potionVal/potionMax*100)+'%';
+    }
+
+    function exitPotionMode(){
+      clearInterval(potionInterval);
+      potionMode=false;
+      document.getElementById('battlefield').classList.remove('potion-mode');
+      document.getElementById('potion-bar-wrap').classList.remove('show');
+      updatePotionDisplay();
+    }
+
+    function potionClickCastle(){
+      if(!potionMode||potions<=0) return;
+      const heal=Math.ceil(maxBaseHP*POTION_CASTLE_PCT);
+      baseHP=Math.min(maxBaseHP,baseHP+heal);
+      potions--;
+      showBattleMsg(`🧪 Castle healed +${heal} HP! (${potions} potions left)`,'hit');
+      updateHUD(); updatePotionDisplay();
+      if(potions<=0) exitPotionMode();
+    }
+
+    function potionClickUnit(unitId){
+      if(!potionMode||potions<=0) return;
+      const unit=myUnits.find(u=>u.id===unitId);
+      if(!unit) return;
+      unit.hp=unit.maxHP;
+      potions--;
+      showBattleMsg(`🧪 ${UNIT_DEFS[unit.type].name} fully healed! (${potions} potions left)`,'hit');
+      render(); updatePotionDisplay();
+      if(potions<=0) exitPotionMode();
     }
 
     // ══════════════════════════════════════
@@ -1191,6 +1342,13 @@
       setTimeout(()=>el.classList.add('fadein'),10);
     }
 
+    document.getElementById('player-army').addEventListener('click',function(e){
+      if(!potionMode||potions<=0) return;
+      const card=e.target.closest('.uc');
+      if(!card) return;
+      const unitId=parseInt(card.id.replace('pu-',''));
+      potionClickUnit(unitId);
+    });
   </script>
 </body>
 </html>
