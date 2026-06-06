@@ -23,7 +23,7 @@
     body {
       font-family:'Rajdhani', sans-serif;
       background:#02040a; min-height:100vh;
-      display:flex; align-items:flex-start; justify-content:center;
+      display:flex; flex-direction:column; align-items:center;
       color:white; overflow-y:auto; overflow-x:hidden;
     }
     .sky { position:fixed; inset:0; z-index:0;
@@ -51,7 +51,7 @@
       box-shadow:0 0 18px rgba(255,255,120,.3),0 0 50px rgba(255,255,100,.12),0 0 90px rgba(255,255,80,.06); }
 
     /* ── Screens ── */
-    .screen { display:none; width:100%; max-width:720px; padding:20px 20px 80px; position:relative; z-index:1; text-align:center; }
+    .screen { display:none; width:100%; max-width:720px; padding:20px 20px 80px; position:relative; z-index:1; text-align:center; margin:auto; }
     .screen.active { display:block; }
     .screen.fadein { animation:fadeUp .28s cubic-bezier(.22,1,.36,1); }
     @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
