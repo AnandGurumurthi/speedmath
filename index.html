@@ -156,7 +156,7 @@
     .hud { display:flex; gap:7px; margin-bottom:10px; }
     .hud-box { flex:1; background:rgba(0,0,0,.65); border:1px solid rgba(76,255,80,.15); border-radius:8px; padding:8px 6px; position:relative; overflow:hidden; box-shadow:inset 0 0 20px rgba(76,255,80,.03); }
     .hud-box::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(76,255,80,.4),transparent); }
-    .hud-label { font-family:'Cinzel',serif; font-size:.48em; letter-spacing:2px; text-transform:uppercase; color:#2a5020; margin-bottom:2px; }
+    .hud-label { font-family:'Cinzel',serif; font-size:.6em; letter-spacing:2px; text-transform:uppercase; color:#2a5020; margin-bottom:2px; }
     .hud-val   { font-family:'Bebas Neue',sans-serif; font-size:2em; color:var(--green); line-height:1; }
     .hud-val.gold { color:var(--gold); }
 
@@ -191,7 +191,7 @@
     /* Unit cards */
     .uc { display:flex; flex-direction:column; align-items:center; width:58px; flex-shrink:0; border:2px solid; border-radius:10px; padding:4px 2px 4px; cursor:default; transition:transform .15s,box-shadow .15s; }
     .uc:hover { transform:scale(1.12) translateY(-2px); z-index:2; }
-    .uc-name  { font-family:'Cinzel',serif; font-size:.44em; letter-spacing:.5px; text-transform:uppercase; color:rgba(255,255,255,.8); margin-top:2px; }
+    .uc-name  { font-family:'Cinzel',serif; font-size:.56em; letter-spacing:.5px; text-transform:uppercase; color:rgba(255,255,255,.8); margin-top:2px; }
     .uc-dmg   { font-family:'Bebas Neue',sans-serif; font-size:.65em; margin-top:1px; letter-spacing:1px; }
     .uc-hpbar { width:48px; height:6px; background:rgba(0,0,0,.7); border-radius:3px; margin-top:3px; overflow:hidden; }
     .uc-hpfill{ height:100%; border-radius:3px; transition:width .3s; }
@@ -280,11 +280,11 @@
     #btn-attack { border-color:rgba(245,197,24,.28); background:rgba(18,14,0,.7); }
     #btn-attack:hover:not(.locked) { border-color:var(--gold); background:rgba(245,197,24,.1); box-shadow:0 4px 14px rgba(245,197,24,.22); }
     .act-icon { font-size:1.45em; }
-    .act-name { font-family:'Cinzel',serif; font-size:.46em; font-weight:600; letter-spacing:.5px; text-transform:uppercase; }
-    .act-cost { font-family:'Rajdhani',sans-serif; font-size:.58em; font-weight:700; }
+    .act-name { font-family:'Cinzel',serif; font-size:.62em; font-weight:600; letter-spacing:.5px; text-transform:uppercase; }
+    .act-cost { font-family:'Rajdhani',sans-serif; font-size:.72em; font-weight:700; }
     .act-cost.free { color:var(--gold); letter-spacing:1px; }
     .act-cost.cant { color:var(--blood); }
-    .act-diff { font-family:'Rajdhani',sans-serif; font-size:.48em; margin-top:1px; opacity:.65; }
+    .act-diff { font-family:'Rajdhani',sans-serif; font-size:.6em; margin-top:1px; opacity:.65; }
 
     /* Math panel */
     .math-panel {
@@ -376,6 +376,25 @@
     .save-score-btn:disabled { opacity:.4; cursor:default; }
     #name-entry-msg { font-family:'Rajdhani',sans-serif; font-size:.9em; font-weight:700; margin-top:8px; min-height:22px; }
     #view-lb-btn { display:none; margin-top:10px; }
+
+    /* ── Pause ── */
+    #pause-btn {
+      background:rgba(0,0,0,.6); border:1px solid rgba(76,255,80,.2);
+      border-radius:8px; color:rgba(255,255,255,.6); cursor:pointer;
+      font-family:'Cinzel',serif; font-size:.72em; font-weight:700;
+      padding:6px 18px; letter-spacing:2px; text-transform:uppercase;
+      transition:all .2s;
+    }
+    #pause-btn:hover { border-color:var(--gold); color:var(--gold); }
+    #pause-overlay {
+      display:none; position:fixed; inset:0; z-index:200;
+      background:rgba(0,0,0,.88);
+      flex-direction:column; align-items:center; justify-content:center; gap:24px;
+    }
+    #pause-overlay.show { display:flex; animation:fadeUp .2s ease; }
+    .pause-title { font-family:'Cinzel Decorative',serif; font-size:3em; color:var(--gold);
+      text-shadow:0 0 30px var(--gold-glow); letter-spacing:6px; }
+    .pause-sub { font-family:'Rajdhani',sans-serif; font-size:1em; color:#4a7a40; letter-spacing:3px; text-transform:uppercase; }
 
     /* Warrior recruit table */
     .recruit-table { width:100%; border-collapse:collapse; margin-top:10px; }
@@ -602,6 +621,10 @@
       <div class="hud-box"><div class="hud-label">Enemies</div><div class="hud-val" id="enemy-count-disp">0</div></div>
     </div>
 
+    <div style="display:flex;justify-content:flex-end;margin-bottom:4px">
+      <button id="pause-btn" onclick="togglePause()">⏸ Pause</button>
+    </div>
+
     <div class="base-hp-row">
       <span class="base-hp-icon">🏰</span>
       <div class="base-hp-track"><div class="base-hp-fill" id="base-hp-fill" style="width:100%;background:#4cff50"></div></div>
@@ -696,6 +719,12 @@
     </div>
 
     <button id="retreat-btn" onclick="retreat()">← Retreat to Menu</button>
+
+    <div id="pause-overlay">
+      <div class="pause-title">⏸ PAUSED</div>
+      <div class="pause-sub">Tap resume to continue</div>
+      <button class="big-btn btn-green" style="width:220px" onclick="togglePause()">▶ Resume</button>
+    </div>
   </div>
 
   <!-- ════ 8. GAME OVER ════ -->
@@ -817,7 +846,8 @@
     let approachVal=0, approachMax=0, approachInterval=null;
     let answerVal=0,  answerMax=0,  answerInterval=null;
     let potions=0, answerStreak=0, potionMode=false, potionVal=0, potionMax=0, potionInterval=null;
-    let gameStartTime=0, gameElapsedSecs=0, gameTimerInterval=null;
+    let gameElapsedSecs=0, gameTimerInterval=null;
+    let paused=false;
 
     // ══════════════════════════════════════
     //  HELPERS
@@ -856,16 +886,35 @@
     }
     function startGameTimer(){
       clearInterval(gameTimerInterval);
-      gameStartTime=Date.now(); gameElapsedSecs=0;
+      gameElapsedSecs=0;
       gameTimerInterval=setInterval(()=>{
-        gameElapsedSecs=Math.floor((Date.now()-gameStartTime)/1000);
+        if(paused) return;
+        gameElapsedSecs++;
         const el=document.getElementById('game-time-disp');
         if(el) el.textContent=formatTime(gameElapsedSecs);
       },1000);
     }
-    function stopGameTimer(){
-      clearInterval(gameTimerInterval);
-      gameElapsedSecs=Math.floor((Date.now()-gameStartTime)/1000);
+    function stopGameTimer(){ clearInterval(gameTimerInterval); }
+
+    // ══════════════════════════════════════
+    //  PAUSE
+    // ══════════════════════════════════════
+    function togglePause(){
+      paused=!paused;
+      const btn=document.getElementById('pause-btn');
+      const ov=document.getElementById('pause-overlay');
+      if(paused){
+        stopAnswerTimer();
+        btn.textContent='▶ Resume';
+        ov.classList.add('show');
+      } else {
+        if(panelOpen){
+          const bonus=pendingAction!=='attack'&&UNIT_DEFS[pendingAction]?UNIT_DEFS[pendingAction].bonusSecs:0;
+          startAnswerTimer(bonus);
+        }
+        btn.textContent='⏸ Pause';
+        ov.classList.remove('show');
+      }
     }
 
     // ══════════════════════════════════════
@@ -982,7 +1031,7 @@
       gold=d.startGold; baseHP=maxBaseHP=d.baseHP;
       waveIdx=0; score=0; totalKills=0; totalGoldEarned=d.startGold;
       myUnits=[]; enemies=[]; uidCounter=0; busy=false; panelOpen=false;
-      potions=0; answerStreak=0; potionMode=false; updatePotionDisplay();
+      potions=0; answerStreak=0; potionMode=false; paused=false; updatePotionDisplay();
 
       // Start with 4 free soldiers
       for(let i=0;i<4;i++)
@@ -1005,7 +1054,7 @@
       approachVal = 0;
       updateApproachBar();
       approachInterval = setInterval(()=>{
-        if(panelOpen||busy||potionMode) return;
+        if(panelOpen||busy||potionMode||paused) return;
         approachVal++;
         updateApproachBar();
         if(approachVal>=approachMax){
@@ -1041,6 +1090,7 @@
       answerVal=answerMax;
       updateAnswerBar();
       answerInterval=setInterval(()=>{
+        if(paused) return;
         answerVal=Math.max(0,answerVal-1);
         updateAnswerBar();
         if(answerVal<=0){ clearInterval(answerInterval); onAnswerTimeout(); }
