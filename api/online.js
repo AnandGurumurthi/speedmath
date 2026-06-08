@@ -37,6 +37,7 @@ module.exports = async function handler(req, res) {
     // ── SEARCH: join matchmaking queue ──────────────────────────────────
     if (action === 'search') {
       const { player_id, player_name } = params;
+      const isSpeed = player_id.startsWith('sp-');
 
       // Clean stale entries older than 90s
       await sb('DELETE', `/online_queue?created_at=lt.${new Date(Date.now() - 90000).toISOString()}`);
@@ -44,8 +45,11 @@ module.exports = async function handler(req, res) {
       // Remove any existing entry for this player
       await sb('DELETE', `/online_queue?player_id=eq.${player_id}`);
 
-      // Look for someone else searching
-      const queue = await sb('GET', `/online_queue?room_id=is.null&player_id=neq.${encodeURIComponent(player_id)}&limit=1`);
+      // Look for someone else searching — speed players only match with speed players
+      const modeFilter = isSpeed
+        ? `player_id=like.sp-*&player_id=neq.${encodeURIComponent(player_id)}`
+        : `player_id=not.like.sp-*&player_id=neq.${encodeURIComponent(player_id)}`;
+      const queue = await sb('GET', `/online_queue?room_id=is.null&${modeFilter}&limit=1`);
 
       if (queue && queue.length > 0) {
         const opponent = queue[0];

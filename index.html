@@ -422,6 +422,17 @@
     .searching-spin { font-size:2.5em; animation:bobL 1.2s ease-in-out infinite; margin:20px 0; }
     .ol-conn { font-family:'Rajdhani',sans-serif; font-size:.72em; color:#2a5020; letter-spacing:2px; text-transform:uppercase; text-align:right; margin-bottom:4px; }
 
+    /* ══ SPEED BATTLE ══ */
+    #speed-result.active { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; }
+    .sp-race-bar { display:flex; align-items:center; justify-content:space-between; background:rgba(30,20,0,.7); border:1px solid rgba(245,197,24,.2); border-radius:8px; padding:8px 12px; margin-bottom:8px; gap:8px; }
+    .sp-racer-info { display:flex; flex-direction:column; gap:3px; flex:1; }
+    .sp-racer-info:last-child { text-align:right; }
+    .sp-racer-name { font-family:'Cinzel',serif; font-size:.65em; font-weight:700; color:rgba(255,255,255,.7); letter-spacing:1px; text-transform:uppercase; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .sp-wave-badge { font-family:'Rajdhani',sans-serif; font-size:.85em; font-weight:700; color:#f5c518; letter-spacing:1px; }
+    .sp-wave-badge.done { color:#4cff50; }
+    .sp-race-flag { font-size:1.5em; flex-shrink:0; }
+    .sp-approach-wrap { margin-bottom:6px; }
+
     /* ══ PVP ══ */
     #pvp-handoff.active { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; }
     #pvp-result.active  { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; }
@@ -530,8 +541,9 @@
     <div class="screen-title" style="margin-bottom:6px">⚔️ Math Battle</div>
     <div class="screen-sub" style="margin-bottom:28px">What would you like to do?</div>
     <button class="big-btn btn-green" style="margin-bottom:12px;font-size:1.1em;letter-spacing:5px" onclick="showScreen('difficulty')">⚔️ &nbsp;Play</button>
-    <button class="big-btn" style="background:linear-gradient(180deg,#4a0000,#2d0000);color:#ff8080;border:2px solid rgba(255,80,80,.3);box-shadow:0 4px 0 #1a0000;margin-bottom:12px" onclick="showScreen('pvp-setup')">⚔️ &nbsp;1v1 Pass &amp; Play</button>
-    <button class="big-btn" style="background:linear-gradient(180deg,#001840,#000d28);color:#60c0ff;border:2px solid rgba(0,180,255,.3);box-shadow:0 4px 0 #000818;margin-bottom:12px" onclick="showScreen('online-setup')">🌐 &nbsp;1v1 Online</button>
+    <button class="big-btn" style="display:none;background:linear-gradient(180deg,#4a0000,#2d0000);color:#ff8080;border:2px solid rgba(255,80,80,.3);box-shadow:0 4px 0 #1a0000;margin-bottom:12px" onclick="showScreen('pvp-setup')">⚔️ &nbsp;1<span style="text-transform:none">v</span>1 Pass &amp; Play</button>
+    <button class="big-btn" style="background:linear-gradient(180deg,#001840,#000d28);color:#60c0ff;border:2px solid rgba(0,180,255,.3);box-shadow:0 4px 0 #000818;margin-bottom:12px" onclick="showScreen('online-setup')">🌐 &nbsp;1<span style="text-transform:none">v</span>1 Online Battle</button>
+    <button class="big-btn" style="background:linear-gradient(180deg,#4a3000,#2d1a00);color:#f5c518;border:2px solid rgba(245,197,24,.35);box-shadow:0 4px 0 #1a0d00;margin-bottom:12px" onclick="showScreen('speed-setup')">⚡ &nbsp;1<span style="text-transform:none">v</span>1 Online Speed Battle</button>
     <button class="big-btn" style="background:linear-gradient(180deg,#6b4800,#3d2800);color:var(--gold);border:2px solid rgba(245,197,24,.3);box-shadow:0 4px 0 #1a1000;margin-bottom:12px" onclick="openLeaderboard('medium')">🏆 &nbsp;Leaderboard</button>
     <button class="big-btn" style="background:linear-gradient(180deg,#001840,#000d28);color:#60a0ff;border:2px solid rgba(80,140,255,.3);box-shadow:0 4px 0 #000818;margin-bottom:12px" onclick="renderProfileScreen();showScreen('profile')">👤 &nbsp;Profile</button>
     <button class="big-btn" style="background:transparent;border:1px solid rgba(76,255,80,.2);color:rgba(255,255,255,.5);margin-bottom:12px" onclick="showScreen('instructions')">📖 &nbsp;How to Play</button>
@@ -1491,6 +1503,7 @@
     function olMatched(d){
       online.slot=d.slot; online.roomId=d.room_id;
       online.opponentName=d.slot===1?d.p2_name:d.p1_name;
+      if(currentOnlineMode==='speed'&&speed){ speed.slot=d.slot; speed.roomId=d.room_id; speed.opponentName=online.opponentName; }
       document.getElementById('ol-p1-name').textContent=d.p1_name;
       document.getElementById('ol-p2-name').textContent=d.p2_name;
       document.getElementById('ol-ready-btn').disabled=false;
@@ -1520,7 +1533,7 @@
       const t=setInterval(()=>{
         n--;
         if(n>0){ el.className='cd-num'; void el.offsetWidth; el.className='cd-num'; el.textContent=n; el.style.color=n===1?'#e91e63':n===2?'#ff6b35':n===3?'#f5c518':'white'; }
-        else{ clearInterval(t); el.textContent='FIGHT!'; el.className='cd-num fight'; setTimeout(olStartGame,800); }
+        else{ clearInterval(t); el.textContent='FIGHT!'; el.className='cd-num fight'; setTimeout(currentOnlineMode==='speed'?spStartGame:olStartGame,800); }
       },1000);
     }
 
@@ -1745,7 +1758,9 @@
     function onlineCancelSearch(){
       clearInterval(online?.pollInterval);
       if(online?.playerId){ fetch('/api/online',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'cancel',player_id:online.playerId})}).catch(()=>{}); }
-      online=null; showScreen('mainmenu');
+      const backScreen=currentOnlineMode==='speed'?'speed-setup':'mainmenu';
+      online=null; speed=null; currentOnlineMode='battle';
+      showScreen(backScreen);
     }
 
     function olGameOver(winnerName){
@@ -1756,6 +1771,315 @@
       document.getElementById('ol-result-title').className='end-title '+(won?'victory':'defeat');
       document.getElementById('ol-result-sub').textContent=won?`${online.opponentName}'s castle fell!`:`${online.opponentName} won!`;
       showScreen('online-result');
+    }
+
+    // ══════════════════════════════════════
+    //  SPEED BATTLE (1v1 Online Speed)
+    // ══════════════════════════════════════
+    const SP_HP=100, SP_GOLD=30, SP_SOLDIERS=2, SP_ANSWER_SECS=10, SP_MAX_NUM=25, SP_MULT_MAX=12, SP_GOLD_PER_Q=10, SP_APPROACH_SECS=10;
+    let speed=null, spAnswerVal=0, spAnswerMax=0, spAnswerInterval=null, spCurrentAnswer=0, spChoiceValues=[];
+    let currentOnlineMode='battle';
+
+    function speedSearch(){
+      const name=(document.getElementById('speed-name').value.trim())||'Player';
+      const pid='sp-'+(crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now());
+      // Reuse online object for shared matchmaking screens
+      online={
+        playerId:pid, playerName:name, slot:0, roomId:null, opponentName:'',
+        myState:olMakeState(name), oppState:olMakeState('Opponent'),
+        pollInterval:null, lastEventTs:0, gameOver:false,
+        panelOpen:false, action:'', defendStep:0, recruitStep:0, uidCounter:0,
+      };
+      speed={
+        playerId:pid, playerName:name, slot:0, roomId:null, opponentName:'',
+        castle:SP_HP, maxCastle:SP_HP, army:[], gold:SP_GOLD,
+        enemies:[], waveIdx:0, wavesDone:0,
+        panelOpen:false, action:'', recruitStep:0, uidCounter:0,
+        pollInterval:null, gameOver:false,
+        approachVal:SP_APPROACH_SECS*10, approachMax:SP_APPROACH_SECS*10, approachInterval:null,
+        oppWavesDone:0,
+      };
+      currentOnlineMode='speed';
+      showScreen('online-searching');
+      fetch('/api/online',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'search',player_id:pid,player_name:name})})
+      .then(r=>r.json()).then(d=>{ if(d.status==='matched') olMatched(d); else online.pollInterval=setInterval(olPollMatch,1800); })
+      .catch(()=>{ showScreen('speed-setup'); alert('Connection error — try again!'); });
+    }
+
+    function spStartGame(){
+      speed.castle=speed.maxCastle=SP_HP; speed.army=[]; speed.gold=SP_GOLD;
+      speed.waveIdx=0; speed.wavesDone=0; speed.gameOver=false; speed.panelOpen=false;
+      speed.oppWavesDone=0; speed.uidCounter=0;
+      for(let i=0;i<SP_SOLDIERS;i++) speed.army.push({id:++speed.uidCounter,type:'soldier',hp:4,maxHP:4,dmg:1});
+      spSpawnWave(0);
+      spRender(); showScreen('speed-game');
+      speed.approachVal=speed.approachMax;
+      speed.approachInterval=setInterval(spApproachTick,100);
+      speed.pollInterval=setInterval(spPollGame,800);
+      spPostProgress();
+    }
+
+    function spSpawnWave(waveIdx){
+      speed.enemies=[];
+      const waveDef=WAVES[waveIdx];
+      waveDef.forEach(group=>{
+        const eDef=ENEMY_DEFS[group.type];
+        for(let i=0;i<group.count;i++){
+          const n=ENEMY_NAMES[Math.floor(Math.random()*ENEMY_NAMES.length)];
+          speed.enemies.push({id:++speed.uidCounter,type:group.type,hp:eDef.hp,maxHP:eDef.hp,dmg:eDef.dmg,name:n});
+        }
+      });
+      speed.approachVal=speed.approachMax;
+    }
+
+    function spPollGame(){
+      if(speed.gameOver){clearInterval(speed.pollInterval);return;}
+      fetch(`/api/online?action=poll_game&room_id=${speed.roomId}`)
+      .then(r=>r.json()).then(room=>{
+        if(!room) return;
+        if(room.status==='finished'){
+          clearInterval(speed.pollInterval);
+          if(!speed.gameOver) spGameOver(room.winner_name);
+          return;
+        }
+        const oppSlot=speed.slot===1?2:1; const pre=oppSlot===1?'p1':'p2';
+        // Opponent's waves done is stored in their shields field (repurposed for speed mode)
+        speed.oppWavesDone=room[`${pre}_shields`]||0;
+        spRender();
+      }).catch(()=>{});
+    }
+
+    function spApproachTick(){
+      if(speed.panelOpen||speed.gameOver) return;
+      speed.approachVal=Math.max(0,speed.approachVal-1);
+      const pct=100-Math.round(speed.approachVal/speed.approachMax*100);
+      const fill=document.getElementById('sp-approach-fill');
+      if(fill){fill.style.width=pct+'%';fill.style.background=pct>75?'#e91e63':pct>40?'#ff6b35':'#4cff50';}
+      if(speed.approachVal<=0){spEnemyAutoAttack();speed.approachVal=speed.approachMax;}
+    }
+
+    function spEnemyAutoAttack(){
+      if(!speed||speed.enemies.length===0) return;
+      const e=speed.enemies[0],dmg=e.dmg;
+      if(speed.army.length>0){
+        speed.army[0].hp-=dmg;
+        if(speed.army[0].hp<=0){const f=speed.army.shift();spMsg(`💥 Your ${UNIT_DEFS[f.type].name} was defeated!`,'damage');}
+        else spMsg(`💀 ${e.name} hits your ${UNIT_DEFS[speed.army[0]?.type||'soldier'].name} for ${dmg}!`,'damage');
+      } else {
+        speed.castle=Math.max(0,speed.castle-dmg);
+        spMsg(`🏰 ${e.name} hits your castle for ${dmg}!`,'damage');
+        if(speed.castle<=0){clearInterval(speed.approachInterval);spCancelAction();spGameOver('castle');return;}
+      }
+      spRender();
+    }
+
+    function spClickAction(a){
+      if(speed.panelOpen||speed.gameOver||speed.enemies.length===0) return;
+      if(a!=='attack'){
+        const def=UNIT_DEFS[a];
+        if(speed.gold<def.cost){spMsg(`Need ${def.cost} 💰!`,'damage');return;}
+        const full=speed.army.length>=MAX_ARMY;
+        if(full){const wk=speed.army.reduce((w,u)=>UNIT_DEFS[u.type].cost<UNIT_DEFS[w.type].cost?u:w);if(def.cost<=UNIT_DEFS[wk.type].cost){spMsg('Army already stronger!','damage');return;}}
+      }
+      speed.action=a; speed.recruitStep=0; speed.panelOpen=true;
+      spGenQ(); spStartAnswerTimer(); spUpdLabel();
+      document.getElementById('sp-mp-feedback').textContent='';
+      document.getElementById('sp-mp-feedback').className='mp-feedback';
+      document.getElementById('sp-math-panel').classList.add('open');
+      document.getElementById('sp-actions-panel').style.opacity='.4';
+    }
+
+    function spCancelAction(){
+      if(!speed) return;
+      speed.panelOpen=false; spStopAnswerTimer();
+      document.getElementById('sp-math-panel').classList.remove('open');
+      document.getElementById('sp-actions-panel').style.opacity='1';
+      speed.action=''; speed.recruitStep=0;
+    }
+
+    function spUpdLabel(){
+      const el=document.getElementById('sp-mp-action-lbl'); if(!el) return;
+      const a=speed.action;
+      if(a==='attack'){el.textContent='⚔️ Attacking!';return;}
+      if(UNIT_DEFS[a]){const d=UNIT_DEFS[a];el.textContent=`${d.emoji} Recruiting ${d.name} — Step ${speed.recruitStep+1} of ${d.recruitQuestions}`;}
+    }
+
+    function spGenQ(){
+      const ops=['addition','subtraction','multiply','division']; const op=ops[rnd(0,3)];
+      let a,b,q,ans;
+      if(op==='addition'){a=rnd(1,SP_MAX_NUM);b=rnd(1,SP_MAX_NUM);q=`${a} + ${b} = ?`;ans=a+b;}
+      else if(op==='subtraction'){a=rnd(1,SP_MAX_NUM);b=rnd(1,a);q=`${a} − ${b} = ?`;ans=a-b;}
+      else if(op==='multiply'){a=rnd(1,SP_MULT_MAX);b=rnd(1,SP_MULT_MAX);q=`${a} × ${b} = ?`;ans=a*b;}
+      else{b=rnd(1,SP_MULT_MAX);ans=rnd(1,SP_MULT_MAX);a=b*ans;q=`${a} ÷ ${b} = ?`;}
+      spCurrentAnswer=ans; document.getElementById('sp-qtext').textContent=q;
+      const lbs={addition:'➕ Addition',subtraction:'➖ Subtraction',multiply:'✖️ Multiplication',division:'➗ Division'};
+      document.getElementById('sp-op-lbl').textContent=lbs[op];
+      spChoiceValues=shuffle([ans,...generateWrongAnswers(ans)]);
+      for(let i=0;i<4;i++){const btn=document.getElementById('sp-choice-'+i);btn.textContent=spChoiceValues[i];btn.className='choice-btn';btn.disabled=false;}
+    }
+
+    function spStartAnswerTimer(){
+      clearInterval(spAnswerInterval); spAnswerMax=SP_ANSWER_SECS*10; spAnswerVal=spAnswerMax; spUpdAnswerBar();
+      spAnswerInterval=setInterval(()=>{spAnswerVal=Math.max(0,spAnswerVal-1);spUpdAnswerBar();if(spAnswerVal<=0){clearInterval(spAnswerInterval);spAnswerTimeout();}},100);
+    }
+    function spStopAnswerTimer(){clearInterval(spAnswerInterval);}
+    function spUpdAnswerBar(){const f=document.getElementById('sp-timer-fill');if(!f)return;const p=(spAnswerVal/spAnswerMax)*100;f.style.width=p+'%';f.style.background=p>60?'#4cff50':p>25?'#f5c518':'#e91e63';}
+    function spAnswerTimeout(){
+      for(let i=0;i<4;i++) document.getElementById('sp-choice-'+i).disabled=true;
+      const ci=spChoiceValues.indexOf(spCurrentAnswer);if(ci>=0) document.getElementById('sp-choice-'+ci).classList.add('correct');
+      document.getElementById('sp-mp-feedback').textContent=`Time's up! Answer was ${spCurrentAnswer}.`;
+      document.getElementById('sp-mp-feedback').className='mp-feedback damage';
+      setTimeout(()=>{spEnemyAutoAttack();spCancelAction();},1200);
+    }
+
+    function spCheckAnswer(idx){
+      if(!speed||!speed.panelOpen) return; spStopAnswerTimer();
+      for(let i=0;i<4;i++) document.getElementById('sp-choice-'+i).disabled=true;
+      if(spChoiceValues[idx]===spCurrentAnswer){
+        document.getElementById('sp-choice-'+idx).classList.add('correct');
+        speed.gold+=SP_GOLD_PER_Q;
+        if(speed.action==='attack'){
+          document.getElementById('sp-mp-feedback').textContent='Correct! ⚔️';
+          document.getElementById('sp-mp-feedback').className='mp-feedback hit';
+          spDoAttack(); setTimeout(spCancelAction,600);
+        } else {
+          const type=speed.action,def=UNIT_DEFS[type]; speed.recruitStep++;
+          if(speed.recruitStep>=def.recruitQuestions){
+            speed.gold-=def.cost;
+            const army=speed.army;
+            if(army.length>=MAX_ARMY){const wk=army.reduce((w,u)=>UNIT_DEFS[u.type].cost<UNIT_DEFS[w.type].cost?u:w);army.splice(army.indexOf(wk),1);}
+            army.push({id:++speed.uidCounter,type,hp:def.hp,maxHP:def.hp,dmg:def.dmg});
+            document.getElementById('sp-mp-feedback').textContent=`${def.emoji} ${def.name} recruited!`;
+            document.getElementById('sp-mp-feedback').className='mp-feedback hit';
+            spRender(); setTimeout(spCancelAction,700);
+          } else {
+            document.getElementById('sp-mp-feedback').textContent=`Step ${speed.recruitStep} done! 💪`;
+            document.getElementById('sp-mp-feedback').className='mp-feedback hit';
+            spUpdLabel(); setTimeout(()=>{spGenQ();spStartAnswerTimer();document.getElementById('sp-mp-feedback').textContent='';document.getElementById('sp-mp-feedback').className='mp-feedback';},700);
+          }
+        }
+        spRender();
+      } else {
+        document.getElementById('sp-choice-'+idx).classList.add('wrong');
+        const ci=spChoiceValues.indexOf(spCurrentAnswer);if(ci>=0) document.getElementById('sp-choice-'+ci).classList.add('correct');
+        document.getElementById('sp-mp-feedback').textContent=`Wrong! Answer was ${spCurrentAnswer}.`;
+        document.getElementById('sp-mp-feedback').className='mp-feedback damage';
+        setTimeout(()=>{spEnemyAutoAttack();spCancelAction();},1200);
+      }
+    }
+
+    function spDoAttack(){
+      if(!speed||speed.enemies.length===0) return;
+      const dmg=speed.army.length>0?speed.army[0].dmg:1;
+      const e=speed.enemies[0];
+      e.hp-=dmg;
+      spMsg(`⚔️ Hit ${e.name} for ${dmg}!`,'hit');
+      if(e.hp<=0){
+        speed.enemies.shift();
+        speed.gold+=(ENEMY_DEFS[e.type]?.reward||10);
+        spMsg(`💥 ${e.name} defeated!`,'hit');
+        speed.approachVal=speed.approachMax;
+        if(speed.enemies.length===0) spWaveComplete();
+      }
+      spRender(); spPostProgress();
+    }
+
+    function spWaveComplete(){
+      speed.wavesDone++;
+      spPostProgress();
+      if(speed.waveIdx===0){
+        speed.waveIdx=1;
+        speed.gold+=100;
+        speed.castle=Math.min(speed.maxCastle,speed.castle+Math.floor(speed.maxCastle*0.2));
+        setTimeout(()=>{
+          if(speed&&!speed.gameOver){ spSpawnWave(1);spMsg('⚡ Wave 2! Race to finish!','gold');spRender(); }
+        },600);
+      } else {
+        clearInterval(speed.approachInterval); clearInterval(speed.pollInterval); spStopAnswerTimer();
+        speed.gameOver=true;
+        spPostFinish(speed.playerName);
+        const s=loadStats(); s.wins++; saveStats(s);
+        checkAndAwardBadges(s).forEach(showBadgeNotification);
+        spShowResult(true);
+      }
+    }
+
+    function spRender(){
+      if(!speed) return;
+      const myP=Math.max(0,speed.castle/speed.maxCastle*100);
+      document.getElementById('sp-my-hp-fill').style.cssText=`width:${myP}%;background:${myP>60?'#4cff50':myP>30?'#f5c518':'#e91e63'}`;
+      document.getElementById('sp-my-hp-text').textContent=`${Math.max(0,speed.castle)}/${speed.maxCastle}`;
+      document.getElementById('sp-my-name-hp').textContent=speed.playerName;
+      document.getElementById('sp-wave-disp').textContent=`${speed.waveIdx+1} / 2`;
+      document.getElementById('sp-gold-disp').textContent=speed.gold;
+      document.getElementById('sp-enemy-count').textContent=speed.enemies.length;
+      document.getElementById('sp-my-race-name').textContent=speed.playerName;
+      document.getElementById('sp-opp-race-name').textContent=speed.opponentName||'Opponent';
+      const myBadge=document.getElementById('sp-my-wave-badge');
+      const oppBadge=document.getElementById('sp-opp-wave-badge');
+      myBadge.textContent=speed.wavesDone>=2?'✅ Done!':`Wave ${speed.waveIdx+1} — ${speed.enemies.length} left`;
+      myBadge.className='sp-wave-badge'+(speed.wavesDone>=2?' done':'');
+      oppBadge.textContent=speed.oppWavesDone>=2?'✅ Done!':`Wave ${speed.oppWavesDone+1}`;
+      oppBadge.className='sp-wave-badge'+(speed.oppWavesDone>=2?' done':'');
+      const ucHtml=u=>{const d=UNIT_DEFS[u.type],p=Math.max(0,u.hp/u.maxHP*100);return`<div class="uc uc-${u.type}"><span style="font-size:1.3em">${d.emoji}</span><span class="uc-name">${u.type.substring(0,3).toUpperCase()}</span><span class="uc-dmg" style="color:${d.color}">dmg ${u.dmg}</span><div class="uc-hpbar"><div class="uc-hpfill" style="width:${p}%"></div></div></div>`;};
+      const eHtml=e=>{const d=ENEMY_DEFS[e.type],p=Math.max(0,e.hp/e.maxHP*100);return`<div class="uc uc-${e.type}"><span style="font-size:1.3em">${d.emoji}</span><span class="uc-name" style="color:#ff8080">${e.name.split(' ')[0]}</span><span class="uc-dmg" style="color:#ff6060">hp ${e.hp}</span><div class="uc-hpbar"><div class="uc-hpfill" style="width:${p}%;background:#e91e63"></div></div></div>`;};
+      const empty='<span style="color:#3a4a30;font-family:Rajdhani;font-size:.85em;padding:4px">None</span>';
+      document.getElementById('sp-my-army').innerHTML=speed.army.map(ucHtml).join('')||empty;
+      document.getElementById('sp-enemies').innerHTML=speed.enemies.map(eHtml).join('')||empty;
+      const full=speed.army.length>=MAX_ARMY;
+      const weakCost=full&&speed.army.length>0?UNIT_DEFS[speed.army.reduce((w,u)=>UNIT_DEFS[u.type].cost<UNIT_DEFS[w.type].cost?u:w).type].cost:0;
+      ['soldier','archer','mage','charioteer','dragon'].forEach(type=>{
+        const btn=document.getElementById('sp-btn-'+type),costEl=document.getElementById('sp-cost-'+type),cost=UNIT_DEFS[type].cost;
+        if(costEl){costEl.textContent=cost+' 💰';costEl.className='act-cost'+(speed.gold>=cost?'':' cant');}
+        if(btn) btn.classList.toggle('locked',speed.gold<cost||(full&&cost<=weakCost));
+      });
+    }
+
+    function spForfeit(){
+      if(!confirm('Forfeit? Your opponent wins!')) return;
+      clearInterval(speed.approachInterval); clearInterval(speed.pollInterval); spStopAnswerTimer();
+      speed.gameOver=true;
+      spPostFinish(speed.opponentName);
+      const s=loadStats(); s.losses++; saveStats(s);
+      spShowResult(false);
+    }
+
+    function spGameOver(winnerOrReason){
+      clearInterval(speed?.approachInterval); clearInterval(speed?.pollInterval); spStopAnswerTimer();
+      if(speed) speed.gameOver=true;
+      const won = winnerOrReason===speed?.playerName;
+      if(!won){const s=loadStats();s.losses++;saveStats(s);}
+      spShowResult(won);
+    }
+
+    function spShowResult(won){
+      document.getElementById('sp-result-icon').textContent=won?'🏆':'💀';
+      document.getElementById('sp-result-title').textContent=won?'You Win!':'Opponent Wins!';
+      document.getElementById('sp-result-title').className='end-title '+(won?'victory':'defeat');
+      document.getElementById('sp-result-sub').textContent=won?
+        `${speed?.opponentName||'Opponent'} is still racing!`:
+        `${speed?.opponentName||'Opponent'} finished first!`;
+      showScreen('speed-result');
+    }
+
+    function spMsg(msg,cls){
+      const el=document.getElementById('sp-battle-msg');if(!el)return;
+      el.textContent=msg;el.className='battle-msg '+cls;
+      clearTimeout(el._t);el._t=setTimeout(()=>{el.textContent='';el.className='battle-msg';},2500);
+    }
+
+    async function spPostProgress(){
+      if(!speed||!speed.roomId) return;
+      try{
+        await fetch('/api/online',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({action:'event',room_id:speed.roomId,slot:speed.slot,event_type:'speed_progress',data:{},
+            my_state:{castle:speed.castle,gold:speed.gold,army:speed.army,shields:speed.wavesDone}})});
+      }catch(e){}
+    }
+    async function spPostFinish(winnerName){
+      if(!speed||!speed.roomId) return;
+      try{await fetch('/api/online',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'finish',room_id:speed.roomId,winner_name:winnerName})});}catch(e){}
     }
 
     // ══════════════════════════════════════
@@ -2523,7 +2847,7 @@
 
   <!-- ════ ONLINE SETUP ════ -->
   <div id="online-setup" class="screen">
-    <div class="screen-title">🌐 Online 1v1</div>
+    <div class="screen-title">🌐 1<span style="text-transform:none">v</span>1 Online Battle</div>
     <div class="screen-sub" style="margin-bottom:16px">Real-Time Battle</div>
     <div class="instr-section" style="margin-bottom:18px">
       <h3>How It Works</h3>
@@ -2655,6 +2979,129 @@
     <div class="end-title victory" id="ol-result-title">Victory!</div>
     <div class="end-sub" id="ol-result-sub">Opponent's castle fell!</div>
     <button class="big-btn btn-green" style="margin-top:24px;margin-bottom:12px" onclick="showScreen('online-setup')">🌐 Play Again</button>
+    <button class="back-btn" onclick="showScreen('mainmenu')">← Main Menu</button>
+  </div>
+
+  <!-- ════ SPEED SETUP ════ -->
+  <div id="speed-setup" class="screen">
+    <div class="screen-title" style="color:#f5c518">⚡ Speed Battle</div>
+    <div class="screen-sub" style="margin-bottom:16px">1<span style="text-transform:none">v</span>1 Online Speed Battle</div>
+    <div class="instr-section" style="margin-bottom:18px">
+      <h3>How It Works</h3>
+      <p>Both players get the same enemies! First to clear <strong style="color:white">2 waves</strong> wins. Answer fast and recruit strong warriors to race ahead!</p>
+      <p style="margin-top:8px">⚠️ No pause. Forfeit = instant loss.</p>
+    </div>
+    <input id="speed-name" class="prof-name-input" style="width:100%;padding:12px 14px;font-size:1.2em;margin-bottom:16px" type="text" placeholder="Your name" maxlength="15"/>
+    <button class="big-btn" style="background:linear-gradient(180deg,#4a3000,#2d1a00);color:#f5c518;border:2px solid rgba(245,197,24,.4);box-shadow:0 4px 0 #1a0d00;margin-bottom:12px" onclick="speedSearch()">⚡ &nbsp;Search for Opponent</button>
+    <button class="back-btn" onclick="showScreen('mainmenu')">← Back</button>
+  </div>
+
+  <!-- ════ SPEED GAME ════ -->
+  <div id="speed-game" class="screen">
+    <div class="ol-conn" id="sp-conn">● LIVE</div>
+
+    <!-- Race progress bar -->
+    <div class="sp-race-bar">
+      <div class="sp-racer-info">
+        <span class="sp-racer-name" id="sp-my-race-name">Me</span>
+        <span class="sp-wave-badge" id="sp-my-wave-badge">Wave 1</span>
+      </div>
+      <div class="sp-race-flag">🏁</div>
+      <div class="sp-racer-info" style="text-align:right">
+        <span class="sp-racer-name" id="sp-opp-race-name">Opponent</span>
+        <span class="sp-wave-badge" id="sp-opp-wave-badge">Wave 1</span>
+      </div>
+    </div>
+
+    <!-- Castle HP -->
+    <div class="pvp-bars" style="margin-bottom:6px">
+      <div class="pvp-bar-row">
+        <div class="pvp-bar-name active" id="sp-my-name-hp">Me</div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="base-hp-track" style="flex:1"><div class="base-hp-fill" id="sp-my-hp-fill" style="width:100%;background:#4cff50"></div></div>
+            <span class="base-hp-text" id="sp-my-hp-text">100/100</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Enemy approach -->
+    <div class="sp-approach-wrap">
+      <div class="approach-lbl">Enemy Approach</div>
+      <div class="approach-track"><div class="approach-fill" id="sp-approach-fill" style="width:0%"></div></div>
+    </div>
+
+    <!-- Battlefield -->
+    <div class="battlefield" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+        <div><div class="approach-lbl" style="margin-bottom:4px">Your Army</div><div class="bf-side" id="sp-my-army"></div></div>
+        <span class="bf-vs">VS</span>
+        <div><div class="approach-lbl" style="margin-bottom:4px;text-align:right">Enemies</div><div class="bf-side" id="sp-enemies" style="flex-direction:row-reverse"></div></div>
+      </div>
+    </div>
+
+    <!-- HUD -->
+    <div class="hud" style="margin-bottom:6px">
+      <div class="hud-box"><div class="hud-label">💰 Gold</div><div class="hud-val gold" id="sp-gold-disp">30</div></div>
+      <div class="hud-box"><div class="hud-label">🏁 Wave</div><div class="hud-val" id="sp-wave-disp" style="color:#f5c518">1 / 2</div></div>
+      <div class="hud-box"><div class="hud-label">⚔️ Enemies</div><div class="hud-val" id="sp-enemy-count" style="color:#ff6060">4</div></div>
+    </div>
+
+    <div class="battle-msg" id="sp-battle-msg"></div>
+    <div class="action-hint">⚡ Race to clear 2 waves first!</div>
+
+    <!-- Actions -->
+    <div class="actions" id="sp-actions-panel">
+      <button class="act-btn" id="sp-btn-attack" onclick="spClickAction('attack')" style="border-color:rgba(245,197,24,.28);background:rgba(18,14,0,.7)">
+        <span class="act-icon">⚔️</span><span class="act-name">Attack</span><span class="act-cost free">FREE</span>
+      </button>
+      <button class="act-btn" id="sp-btn-soldier" onclick="spClickAction('soldier')">
+        <span class="act-icon">🗡️</span><span class="act-name">Soldier</span><span class="act-cost" id="sp-cost-soldier">10 💰</span>
+      </button>
+      <button class="act-btn" id="sp-btn-archer" onclick="spClickAction('archer')">
+        <span class="act-icon">🏹</span><span class="act-name">Archer</span><span class="act-cost" id="sp-cost-archer">25 💰</span>
+      </button>
+      <button class="act-btn" id="sp-btn-mage" onclick="spClickAction('mage')">
+        <span class="act-icon">🔮</span><span class="act-name">Mage</span><span class="act-cost" id="sp-cost-mage">45 💰</span>
+      </button>
+      <button class="act-btn" id="sp-btn-charioteer" onclick="spClickAction('charioteer')">
+        <span class="act-icon">🏇</span><span class="act-name">Chariot</span><span class="act-cost" id="sp-cost-charioteer">60 💰</span>
+      </button>
+      <button class="act-btn" id="sp-btn-dragon" onclick="spClickAction('dragon')">
+        <span class="act-icon">🐉</span><span class="act-name">Dragon</span><span class="act-cost" id="sp-cost-dragon">90 💰</span>
+      </button>
+    </div>
+
+    <!-- Math panel -->
+    <div class="math-panel" id="sp-math-panel">
+      <div class="mp-header">
+        <span class="mp-action" id="sp-mp-action-lbl">⚔️ Attacking</span>
+        <button class="mp-cancel" onclick="spCancelAction()">✕ Cancel</button>
+      </div>
+      <div class="timer-track"><div class="timer-fill" id="sp-timer-fill" style="width:100%"></div></div>
+      <div class="qcard">
+        <div class="op-lbl" id="sp-op-lbl">Maths Question</div>
+        <div class="qtext" id="sp-qtext">? + ? = ?</div>
+      </div>
+      <div class="choice-grid">
+        <button class="choice-btn" id="sp-choice-0" onclick="spCheckAnswer(0)"></button>
+        <button class="choice-btn" id="sp-choice-1" onclick="spCheckAnswer(1)"></button>
+        <button class="choice-btn" id="sp-choice-2" onclick="spCheckAnswer(2)"></button>
+        <button class="choice-btn" id="sp-choice-3" onclick="spCheckAnswer(3)"></button>
+      </div>
+      <div class="mp-feedback" id="sp-mp-feedback"></div>
+    </div>
+
+    <button class="back-btn" style="margin-top:10px;border-color:rgba(233,30,99,.25);color:rgba(233,30,99,.4)" onclick="spForfeit()">🏳️ &nbsp;Forfeit</button>
+  </div>
+
+  <!-- ════ SPEED RESULT ════ -->
+  <div id="speed-result" class="screen">
+    <div class="end-icon" id="sp-result-icon">🏆</div>
+    <div class="end-title victory" id="sp-result-title">You Win!</div>
+    <div class="end-sub" id="sp-result-sub">You cleared 2 waves first!</div>
+    <button class="big-btn" style="background:linear-gradient(180deg,#4a3000,#2d1a00);color:#f5c518;border:2px solid rgba(245,197,24,.4);box-shadow:0 4px 0 #1a0d00;margin-top:24px;margin-bottom:12px" onclick="showScreen('speed-setup')">⚡ &nbsp;Race Again</button>
     <button class="back-btn" onclick="showScreen('mainmenu')">← Main Menu</button>
   </div>
 
