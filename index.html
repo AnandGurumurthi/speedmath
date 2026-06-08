@@ -1276,6 +1276,7 @@
         gold+=enemy.reward; totalGoldEarned+=enemy.reward; totalKills++;
         score+=enemy.reward*5;
         enemies.shift();
+        approachVal=0; updateApproachBar();
         showBattleMsg(`${enemy.name} has been defeated! +${enemy.reward} 💰`,'hit');
         updateHUD(); render();
         if(enemies.length===0) waveComplete();
