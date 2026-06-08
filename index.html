@@ -1221,6 +1221,7 @@
       pvpUpdateShieldDisplay(pi);
       clearInterval(p.shieldInterval);
       p.shieldInterval=setInterval(()=>{
+        if(pvp.cur===pi) return; // pause timer on shield owner's own turn
         p.shieldVal=Math.max(0,p.shieldVal-1);
         const fill=document.getElementById(`pvp-shield-bar-fill-${pi}`);
         if(fill) fill.style.width=(p.shieldVal/p.shieldMax*100)+'%';
@@ -1501,6 +1502,7 @@
 
     function recordWin(){
       const s=loadStats(); s.wins++;
+      s.totalScore=(s.totalScore||0)+score;
       if(gameElapsedSecs<(s.bestTime??99999)) s.bestTime=gameElapsedSecs;
       if(!s.bestTimes) s.bestTimes={};
       if(!s.bestTimes[difficulty]||gameElapsedSecs<s.bestTimes[difficulty]) s.bestTimes[difficulty]=gameElapsedSecs;
@@ -1512,7 +1514,7 @@
       saveStats(s);
       checkAndAwardBadges(s).forEach(showBadgeNotification);
     }
-    function recordLoss(){ const s=loadStats(); s.losses++; saveStats(s); }
+    function recordLoss(){ const s=loadStats(); s.losses++; s.totalScore=(s.totalScore||0)+score; saveStats(s); }
     function recordCorrect(){
       const s=loadStats(); s.correct++;
       if(answerStreak>(s.maxStreak||0)) s.maxStreak=answerStreak;
@@ -1542,6 +1544,7 @@
       document.getElementById('stat-losses').textContent=stats.losses||0;
       document.getElementById('stat-correct').textContent=stats.correct||0;
       document.getElementById('stat-mistakes').textContent=stats.mistakes||0;
+      document.getElementById('stat-total-score').textContent=(stats.totalScore||0).toLocaleString();
       const diffs=['easy','medium','hard','impossible'];
       const dL={easy:'🟢 Easy',medium:'🟡 Medium',hard:'🟠 Hard',impossible:'☠️ Imposs.'};
       document.getElementById('bests-table').innerHTML=diffs.map(d=>{
@@ -2188,6 +2191,7 @@
 
     function retreat(){
       stopApproachTimer(); stopAnswerTimer(); stopGameTimer();
+      recordLoss();
       panelOpen=false; busy=false;
       showScreen('menu');
     }
@@ -2344,6 +2348,10 @@
           <div class="stat-box losses"> <div class="stat-val" id="stat-losses">0</div>  <div class="stat-lbl">Losses</div></div>
           <div class="stat-box correct"><div class="stat-val" id="stat-correct">0</div> <div class="stat-lbl">Correct</div></div>
           <div class="stat-box mistakes"><div class="stat-val" id="stat-mistakes">0</div><div class="stat-lbl">Mistakes</div></div>
+        </div>
+        <div class="stat-box" style="background:rgba(245,197,24,.06);border-color:rgba(245,197,24,.2);margin-bottom:10px">
+          <div class="stat-val" id="stat-total-score" style="color:var(--gold);font-size:1.6em">0</div>
+          <div class="stat-lbl">Total Score</div>
         </div>
         <div class="instr-section">
           <h3>🏅 Personal Bests</h3>
