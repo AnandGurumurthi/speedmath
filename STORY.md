@@ -3,6 +3,8 @@
 
 *Every quote below is verbatim — spelling, punctuation, and all. That's the point.*
 
+> **Editing rule:** Always append new sections at the bottom. Never rewrite or remove existing sections. Each session's additions should be added as new chapters in the order they happened. This is a living document — the full story as it unfolds.
+
 ---
 
 ## The Handover

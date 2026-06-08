@@ -2,6 +2,8 @@
 
 *For Anand's reference when refactoring. Describes the current implementation — structure, patterns, known debt, and refactoring notes.*
 
+> **Editing rule:** Always append. Never delete or overwrite existing content. When something changes (e.g. a file is split, debt is resolved, a new API is added), add a new dated section or annotate the existing entry with "✅ Resolved in vX.Y" or "Updated in vX.Y". The full technical evolution of this project must be preserved.
+
 **Last updated:** 2026-06-08  
 **Current version:** v1.2
 

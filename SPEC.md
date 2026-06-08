@@ -1,5 +1,7 @@
 # Math Battle — Product Specification
 
+> **Editing rule:** Always append. Never delete or overwrite existing content. Add new version rows, new feature sections, and updated notes. The full history of how this product evolved must be preserved.
+
 **Live URL:** https://speedmath-gamma.vercel.app  
 **GitHub:** https://github.com/AnandGurumurthi/speedmath  
 **Built by:** Aditya (age 10) with Claude  
