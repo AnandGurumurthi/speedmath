@@ -411,6 +411,26 @@
     .recruit-table .tm { color:var(--gold); font-weight:700; }
     .recruit-table .tm.dragon { color:#ff6b00; }
 
+    /* ══ PVP ══ */
+    #pvp-handoff.active { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; }
+    #pvp-result.active  { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; }
+    .pvp-bars { background:rgba(0,0,0,.5); border:1px solid rgba(76,255,80,.1); border-radius:10px; padding:10px 12px; margin-bottom:8px; }
+    .pvp-bar-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+    .pvp-bar-row:last-child { margin-bottom:0; }
+    .pvp-bar-name { font-family:'Cinzel',serif; font-size:.65em; font-weight:600; width:68px; text-align:right; flex-shrink:0; color:#4a7a40; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pvp-bar-name.active { color:var(--gold); text-shadow:0 0 8px var(--gold-glow); }
+    .pvp-shield-badge { font-size:1.05em; width:22px; text-align:center; flex-shrink:0; }
+    .pvp-turn-label { font-family:'Cinzel Decorative',serif; font-size:1.1em; color:var(--gold); text-shadow:0 0 20px var(--gold-glow); letter-spacing:3px; text-align:center; margin:8px 0 6px; }
+    .pvp-handoff-name { font-family:'Cinzel Decorative',serif; font-size:2.2em; color:var(--gold); text-shadow:0 0 24px var(--gold-glow); letter-spacing:3px; margin-bottom:8px; }
+    .pvp-cover-note { color:#4a6a40; font-family:'Rajdhani',sans-serif; font-size:.95em; margin-bottom:32px; }
+    .pvp-shield-btn { background:linear-gradient(180deg,#002050,#001030); border:2px solid rgba(0,191,255,.3); border-radius:7px; color:#60c0ff; cursor:pointer; font-family:'Rajdhani',sans-serif; font-size:.78em; font-weight:700; padding:3px 8px; white-space:nowrap; transition:all .15s; flex-shrink:0; }
+    .pvp-shield-btn:hover:not(:disabled) { border-color:#00bfff; box-shadow:0 0 10px rgba(0,191,255,.4); }
+    .pvp-shield-btn:disabled { opacity:.3; cursor:not-allowed; }
+    .pvp-shield-bar-wrap { margin-top:3px; display:none; }
+    .pvp-shield-bar-wrap.show { display:block; }
+    .pvp-shield-bar-track { width:100%; height:5px; background:rgba(0,30,60,.6); border-radius:3px; overflow:hidden; }
+    .pvp-shield-bar-fill { height:100%; background:linear-gradient(90deg,#00bfff,#60e0ff); border-radius:3px; transition:width .1s linear; box-shadow:0 0 6px rgba(0,191,255,.6); }
+
     /* ══ PROFILE SCREEN ══ */
     .profile-top { display:flex; gap:16px; margin-bottom:16px; align-items:flex-start; }
     .profile-stats-col { flex:1; min-width:0; }
@@ -499,6 +519,7 @@
     <div class="screen-title" style="margin-bottom:6px">⚔️ Math Battle</div>
     <div class="screen-sub" style="margin-bottom:28px">What would you like to do?</div>
     <button class="big-btn btn-green" style="margin-bottom:12px;font-size:1.1em;letter-spacing:5px" onclick="showScreen('difficulty')">⚔️ &nbsp;Play</button>
+    <button class="big-btn" style="background:linear-gradient(180deg,#4a0000,#2d0000);color:#ff8080;border:2px solid rgba(255,80,80,.3);box-shadow:0 4px 0 #1a0000;margin-bottom:12px" onclick="showScreen('pvp-setup')">⚔️ &nbsp;1v1 Battle</button>
     <button class="big-btn" style="background:linear-gradient(180deg,#6b4800,#3d2800);color:var(--gold);border:2px solid rgba(245,197,24,.3);box-shadow:0 4px 0 #1a1000;margin-bottom:12px" onclick="openLeaderboard('medium')">🏆 &nbsp;Leaderboard</button>
     <button class="big-btn" style="background:linear-gradient(180deg,#001840,#000d28);color:#60a0ff;border:2px solid rgba(80,140,255,.3);box-shadow:0 4px 0 #000818;margin-bottom:12px" onclick="renderProfileScreen();showScreen('profile')">👤 &nbsp;Profile</button>
     <button class="big-btn" style="background:transparent;border:1px solid rgba(76,255,80,.2);color:rgba(255,255,255,.5);margin-bottom:12px" onclick="showScreen('instructions')">📖 &nbsp;How to Play</button>
@@ -1091,6 +1112,298 @@
     function openLeaderboard(diff){
       showScreen('leaderboard');
       renderLeaderboard(diff||'medium');
+    }
+
+    // ══════════════════════════════════════
+    //  1v1 PVP  (Pass & Play)
+    // ══════════════════════════════════════
+    const PVP_DIFF = { answerSecs:10, maxNum:50, multMax:15 };
+    const PVP_DEFEND_Q = 3;
+    const PVP_MAX_SHIELDS = 5;
+
+    let pvpMode=false, pvp=null;
+    let pvpAnswerVal=0, pvpAnswerMax=0, pvpAnswerInterval=null;
+    let pvpCurrentAnswer=0, pvpChoiceValues=[];
+    let pvpPanelOpen=false;
+
+    function makePvpPlayer(name){
+      return { name, castle:100, maxCastle:100, army:[], gold:50,
+               shields:0, shieldActive:false, shieldVal:0, shieldMax:50, shieldInterval:null };
+    }
+
+    function startPvP(){
+      const n1=(document.getElementById('pvp-name1').value.trim())||'Player 1';
+      const n2=(document.getElementById('pvp-name2').value.trim())||'Player 2';
+      pvpMode=true;
+      pvp={ p:[makePvpPlayer(n1),makePvpPlayer(n2)], cur:0, action:'', defendStep:0, recruitStep:0, uidCounter:0, over:false };
+      for(let pi=0;pi<2;pi++)
+        for(let i=0;i<2;i++)
+          pvp.p[pi].army.push({id:++pvp.uidCounter,type:'soldier',hp:4,maxHP:4,dmg:1});
+      pvpPanelOpen=false;
+      pvpRender(); showScreen('pvp-game');
+    }
+
+    function pvpRender(){
+      pvpUpdateHUD(); pvpRenderArmies(); pvpUpdateActionButtons();
+    }
+
+    function pvpUpdateHUD(){
+      for(let i=0;i<2;i++){
+        const p=pvp.p[i];
+        const pct=Math.max(0,p.castle/p.maxCastle*100);
+        document.getElementById(`pvp-hp-fill-${i}`).style.width=pct+'%';
+        document.getElementById(`pvp-hp-fill-${i}`).style.background=pct>60?'#4cff50':pct>30?'#f5c518':'#e91e63';
+        document.getElementById(`pvp-hp-text-${i}`).textContent=`${Math.max(0,p.castle)}/${p.maxCastle}`;
+        const nm=document.getElementById(`pvp-hp-name-${i}`);
+        nm.textContent=p.name.length>8?p.name.substring(0,8)+'…':p.name;
+        nm.className='pvp-bar-name'+(i===pvp.cur?' active':'');
+        pvpUpdateShieldDisplay(i);
+      }
+      document.getElementById('pvp-turn-label').textContent=`⚔️ ${pvp.p[pvp.cur].name}'s Turn`;
+      document.getElementById('pvp-gold-disp').textContent=pvp.p[pvp.cur].gold;
+    }
+
+    function pvpUpdateShieldDisplay(pi){
+      const p=pvp.p[pi];
+      const btn=document.getElementById(`pvp-shield-btn-${pi}`);
+      const cnt=document.getElementById(`pvp-shields-${pi}`);
+      if(cnt) cnt.textContent=p.shields;
+      if(btn) btn.disabled=(p.shields<=0||p.shieldActive);
+    }
+
+    function pvpActivateShield(pi){
+      if(!pvp||pvp.p[pi].shields<=0||pvp.p[pi].shieldActive) return;
+      const p=pvp.p[pi];
+      p.shields--; p.shieldActive=true; p.shieldVal=50; p.shieldMax=50;
+      const wrap=document.getElementById(`pvp-shield-bar-wrap-${pi}`);
+      if(wrap) wrap.classList.add('show');
+      pvpUpdateShieldDisplay(pi);
+      clearInterval(p.shieldInterval);
+      p.shieldInterval=setInterval(()=>{
+        p.shieldVal=Math.max(0,p.shieldVal-1);
+        const fill=document.getElementById(`pvp-shield-bar-fill-${pi}`);
+        if(fill) fill.style.width=(p.shieldVal/p.shieldMax*100)+'%';
+        if(p.shieldVal<=0){
+          clearInterval(p.shieldInterval); p.shieldActive=false;
+          if(wrap) wrap.classList.remove('show');
+          pvpUpdateShieldDisplay(pi);
+        }
+      },100);
+    }
+
+    function pvpRenderArmies(){
+      const cur=pvp.p[pvp.cur], opp=pvp.p[1-pvp.cur];
+      const ucHtml=u=>{const d=UNIT_DEFS[u.type],p=Math.max(0,u.hp/u.maxHP*100);return`<div class="uc uc-${u.type}"><span style="font-size:1.3em">${d.emoji}</span><span class="uc-name">${u.type.substring(0,3).toUpperCase()}</span><span class="uc-dmg" style="color:${d.color}">dmg ${u.dmg}</span><div class="uc-hpbar"><div class="uc-hpfill" style="width:${p}%"></div></div></div>`;};
+      const empty='<span style="color:#3a4a30;font-family:Rajdhani;font-size:.85em;padding:4px">None</span>';
+      document.getElementById('pvp-my-army').innerHTML=cur.army.map(ucHtml).join('')||empty;
+      document.getElementById('pvp-opp-army').innerHTML=opp.army.map(ucHtml).join('')||empty;
+    }
+
+    function pvpUpdateActionButtons(){
+      const cur=pvp.p[pvp.cur];
+      const armyFull=cur.army.length>=MAX_ARMY;
+      const weakCost=armyFull&&cur.army.length>0?UNIT_DEFS[cur.army.reduce((w,u)=>UNIT_DEFS[u.type].cost<UNIT_DEFS[w.type].cost?u:w).type].cost:0;
+      ['soldier','archer','mage','charioteer','dragon'].forEach(type=>{
+        const btn=document.getElementById('pvp-btn-'+type);
+        const costEl=document.getElementById('pvp-cost-'+type);
+        const cost=UNIT_DEFS[type].cost;
+        const canReplace=armyFull&&cost>weakCost;
+        if(costEl){ costEl.textContent=cost+' 💰'; costEl.className='act-cost'+(cur.gold>=cost?'':' cant'); }
+        if(btn) btn.classList.toggle('locked',cur.gold<cost||(armyFull&&!canReplace));
+      });
+    }
+
+    function pvpClickAction(action){
+      if(pvpPanelOpen) return;
+      if(action!=='attack'&&action!=='defend'){
+        const cur=pvp.p[pvp.cur]; const def=UNIT_DEFS[action];
+        if(cur.gold<def.cost){pvpShowMsg(`Need ${def.cost} 💰!`,'damage');return;}
+        const armyFull=cur.army.length>=MAX_ARMY;
+        if(armyFull){const wk=cur.army.reduce((w,u)=>UNIT_DEFS[u.type].cost<UNIT_DEFS[w.type].cost?u:w);if(def.cost<=UNIT_DEFS[wk.type].cost){pvpShowMsg('Army is already stronger!','damage');return;}}
+      }
+      pvpOpenMathPanel(action);
+    }
+
+    function pvpOpenMathPanel(action){
+      pvp.action=action; pvp.defendStep=0; pvp.recruitStep=0; pvpPanelOpen=true;
+      pvpGenerateQuestion(); pvpStartAnswerTimer(); pvpUpdateActionLabel();
+      document.getElementById('pvp-mp-feedback').textContent='';
+      document.getElementById('pvp-mp-feedback').className='mp-feedback';
+      document.getElementById('pvp-math-panel').classList.add('open');
+      document.getElementById('pvp-actions-panel').style.opacity='.4';
+    }
+
+    function pvpCloseMathPanel(){
+      pvpPanelOpen=false; pvpStopAnswerTimer();
+      document.getElementById('pvp-math-panel').classList.remove('open');
+      document.getElementById('pvp-actions-panel').style.opacity='1';
+      pvp.action=''; pvp.defendStep=0; pvp.recruitStep=0;
+    }
+
+    function pvpCancelAction(){ pvpCloseMathPanel(); }
+
+    function pvpUpdateActionLabel(){
+      const el=document.getElementById('pvp-mp-action-lbl'); if(!el) return;
+      const a=pvp.action;
+      if(a==='attack'){ el.textContent='⚔️ Attacking!'; return; }
+      if(a==='defend'){ el.textContent=`🛡️ Defend — Step ${pvp.defendStep+1} of ${PVP_DEFEND_Q}`; return; }
+      if(UNIT_DEFS[a]){ const d=UNIT_DEFS[a]; el.textContent=`${d.emoji} Recruiting ${d.name} — Step ${pvp.recruitStep+1} of ${d.recruitQuestions}`; }
+    }
+
+    function pvpGenerateQuestion(){
+      const ops=['addition','subtraction','multiply','division'];
+      const op=ops[rnd(0,3)]; const mn=PVP_DIFF.maxNum; const mm=PVP_DIFF.multMax;
+      let a,b,q,ans;
+      if(op==='addition')    {a=rnd(1,mn);b=rnd(1,mn);q=`${a} + ${b} = ?`;ans=a+b;}
+      else if(op==='subtraction'){a=rnd(1,mn);b=rnd(1,a);q=`${a} − ${b} = ?`;ans=a-b;}
+      else if(op==='multiply')   {a=rnd(1,mm);b=rnd(1,mm);q=`${a} × ${b} = ?`;ans=a*b;}
+      else{b=rnd(1,mm);ans=rnd(1,mm);a=b*ans;q=`${a} ÷ ${b} = ?`;}
+      pvpCurrentAnswer=ans;
+      document.getElementById('pvp-qtext').textContent=q;
+      const lbs={addition:'➕ Addition',subtraction:'➖ Subtraction',multiply:'✖️ Multiplication',division:'➗ Division'};
+      document.getElementById('pvp-op-lbl').textContent=lbs[op];
+      pvpChoiceValues=shuffle([ans,...generateWrongAnswers(ans)]);
+      for(let i=0;i<4;i++){const b=document.getElementById('pvp-choice-'+i);b.textContent=pvpChoiceValues[i];b.className='choice-btn';b.disabled=false;}
+    }
+
+    function pvpStartAnswerTimer(){
+      clearInterval(pvpAnswerInterval); pvpAnswerMax=PVP_DIFF.answerSecs*10; pvpAnswerVal=pvpAnswerMax;
+      pvpUpdateAnswerBar();
+      pvpAnswerInterval=setInterval(()=>{pvpAnswerVal=Math.max(0,pvpAnswerVal-1);pvpUpdateAnswerBar();if(pvpAnswerVal<=0){clearInterval(pvpAnswerInterval);pvpOnAnswerTimeout();}},100);
+    }
+    function pvpStopAnswerTimer(){ clearInterval(pvpAnswerInterval); }
+    function pvpUpdateAnswerBar(){
+      const fill=document.getElementById('pvp-timer-fill'); const pct=(pvpAnswerVal/pvpAnswerMax)*100;
+      fill.style.width=pct+'%'; fill.style.background=pct>60?'#4cff50':pct>25?'#f5c518':'#e91e63';
+    }
+
+    function pvpOnAnswerTimeout(){
+      for(let i=0;i<4;i++) document.getElementById('pvp-choice-'+i).disabled=true;
+      const ci=pvpChoiceValues.indexOf(pvpCurrentAnswer);
+      if(ci>=0) document.getElementById('pvp-choice-'+ci).classList.add('correct');
+      pvpShowMpFeedback(`Time's up! Answer was ${pvpCurrentAnswer}.`,'damage');
+      pvpEnemyHits();
+      setTimeout(pvpCloseMathPanel,1500); setTimeout(pvpHandoff,2000);
+    }
+
+    function pvpCheckAnswer(idx){
+      if(!pvpPanelOpen) return;
+      pvpStopAnswerTimer();
+      for(let i=0;i<4;i++) document.getElementById('pvp-choice-'+i).disabled=true;
+      const val=pvpChoiceValues[idx];
+      if(val===pvpCurrentAnswer){
+        document.getElementById('pvp-choice-'+idx).classList.add('correct');
+        pvp.p[pvp.cur].gold+=12; pvpUpdateHUD();
+        if(pvp.action==='attack'){
+          pvpShowMpFeedback('Correct! ⚔️','hit'); pvpDoAttack();
+          if(!pvp.over){ setTimeout(pvpCloseMathPanel,700); setTimeout(pvpHandoff,1300); }
+        } else if(pvp.action==='defend'){
+          pvp.defendStep++;
+          if(pvp.defendStep>=PVP_DEFEND_Q){
+            const p=pvp.p[pvp.cur]; p.shields=Math.min(PVP_MAX_SHIELDS,p.shields+1);
+            pvpUpdateShieldDisplay(pvp.cur);
+            pvpShowMpFeedback(`🛡️ Shield earned! (${p.shields}/${PVP_MAX_SHIELDS})`,'hit');
+            setTimeout(pvpCloseMathPanel,700); setTimeout(pvpHandoff,1300);
+          } else {
+            pvpShowMpFeedback(`Step ${pvp.defendStep} done! Keep going! 💪`,'hit');
+            pvpUpdateActionLabel();
+            setTimeout(()=>{pvpGenerateQuestion();pvpStartAnswerTimer();document.getElementById('pvp-mp-feedback').textContent='';document.getElementById('pvp-mp-feedback').className='mp-feedback';},700);
+          }
+        } else {
+          const type=pvp.action; const def=UNIT_DEFS[type]; pvp.recruitStep++;
+          if(pvp.recruitStep>=def.recruitQuestions){
+            pvp.p[pvp.cur].gold-=def.cost;
+            const army=pvp.p[pvp.cur].army;
+            if(army.length>=MAX_ARMY){const wk=army.reduce((w,u)=>UNIT_DEFS[u.type].cost<UNIT_DEFS[w.type].cost?u:w);army.splice(army.indexOf(wk),1);}
+            army.push({id:++pvp.uidCounter,type,hp:def.hp,maxHP:def.hp,dmg:def.dmg});
+            pvpShowMpFeedback(`${def.emoji} ${def.name} recruited!`,'hit');
+            pvpRenderArmies(); pvpUpdateHUD();
+            setTimeout(pvpCloseMathPanel,700); setTimeout(pvpHandoff,1300);
+          } else {
+            pvpShowMpFeedback(`Step ${pvp.recruitStep} done! 💪`,'hit');
+            pvpUpdateActionLabel();
+            setTimeout(()=>{pvpGenerateQuestion();pvpStartAnswerTimer();document.getElementById('pvp-mp-feedback').textContent='';document.getElementById('pvp-mp-feedback').className='mp-feedback';},700);
+          }
+        }
+      } else {
+        document.getElementById('pvp-choice-'+idx).classList.add('wrong');
+        const ci=pvpChoiceValues.indexOf(pvpCurrentAnswer);
+        if(ci>=0) document.getElementById('pvp-choice-'+ci).classList.add('correct');
+        const total=pvp.action==='defend'?PVP_DEFEND_Q:pvp.action==='attack'?1:(UNIT_DEFS[pvp.action]?.recruitQuestions||1);
+        pvpShowMpFeedback(total>1?`Wrong! Lost at step ${(pvp.action==='defend'?pvp.defendStep:pvp.recruitStep)+1} of ${total}.`:`Wrong! Answer was ${pvpCurrentAnswer}.`,'damage');
+        pvpEnemyHits();
+        if(!pvp.over){ setTimeout(pvpCloseMathPanel,1500); setTimeout(pvpHandoff,2000); }
+      }
+    }
+
+    function pvpDoAttack(){
+      const ai=pvp.cur, di=1-pvp.cur;
+      const atk=pvp.p[ai], def=pvp.p[di];
+      const dmg=atk.army.length>0?atk.army[0].dmg:1;
+      if(def.army.length>0){
+        def.army[0].hp-=dmg;
+        if(def.army[0].hp<=0){const fallen=def.army.shift();pvpShowMsg(`💥 ${UNIT_DEFS[fallen.type].name} defeated!`,'hit');}
+        else pvpShowMsg(`⚔️ Hit for ${dmg} damage!`,'hit');
+      } else {
+        if(def.shieldActive){
+          clearInterval(def.shieldInterval); def.shieldActive=false;
+          document.getElementById(`pvp-shield-bar-wrap-${di}`).classList.remove('show');
+          pvpUpdateShieldDisplay(di);
+          pvpShowMsg(`🛡️ ${def.name}'s shield blocked it!`,'gold');
+        } else {
+          def.castle=Math.max(0,def.castle-dmg);
+          pvpShowMsg(`🏰 ${def.name}'s castle hit for ${dmg}!`,'hit');
+          if(def.castle<=0){ pvp.over=true; setTimeout(()=>pvpGameOver(ai),900); return; }
+        }
+      }
+      pvpUpdateHUD(); pvpRenderArmies();
+    }
+
+    function pvpEnemyHits(){
+      const ai=1-pvp.cur, di=pvp.cur;
+      const atk=pvp.p[ai], def=pvp.p[di];
+      const dmg=atk.army.length>0?atk.army[0].dmg:1;
+      if(def.army.length>0){
+        def.army[0].hp-=dmg;
+        if(def.army[0].hp<=0) def.army.shift();
+      } else {
+        if(def.shieldActive){
+          clearInterval(def.shieldInterval); def.shieldActive=false;
+          document.getElementById(`pvp-shield-bar-wrap-${di}`).classList.remove('show');
+          pvpUpdateShieldDisplay(di);
+        } else {
+          def.castle=Math.max(0,def.castle-dmg);
+          if(def.castle<=0){ pvp.over=true; setTimeout(()=>pvpGameOver(ai),900); return; }
+        }
+      }
+      pvpUpdateHUD(); pvpRenderArmies();
+    }
+
+    function pvpHandoff(){
+      if(!pvp||pvp.over) return;
+      pvp.cur=1-pvp.cur;
+      document.getElementById('pvp-handoff-name').textContent=pvp.p[pvp.cur].name;
+      showScreen('pvp-handoff');
+    }
+
+    function pvpStartTurn(){
+      pvpRender(); showScreen('pvp-game');
+    }
+
+    function pvpGameOver(winnerIdx){
+      const winner=pvp.p[winnerIdx], loser=pvp.p[1-winnerIdx];
+      document.getElementById('pvp-winner-name').textContent=winner.name+' Wins!';
+      document.getElementById('pvp-loser-text').textContent=`${loser.name}'s castle fell!`;
+      pvpMode=false; showScreen('pvp-result');
+    }
+
+    function pvpShowMsg(msg,cls){
+      const el=document.getElementById('pvp-battle-msg');
+      el.textContent=msg; el.className='battle-msg '+cls;
+      clearTimeout(el._t); el._t=setTimeout(()=>{el.textContent='';el.className='battle-msg';},2500);
+    }
+    function pvpShowMpFeedback(msg,cls){
+      const el=document.getElementById('pvp-mp-feedback'); el.textContent=msg; el.className='mp-feedback '+cls;
     }
 
     // ══════════════════════════════════════
@@ -1843,6 +2156,133 @@
       potionClickUnit(unitId);
     });
   </script>
+
+  <!-- ════ PVP SETUP ════ -->
+  <div id="pvp-setup" class="screen">
+    <div class="screen-title">⚔️ 1v1 Battle</div>
+    <div class="screen-sub" style="margin-bottom:16px">Pass &amp; Play</div>
+    <div class="instr-section" style="margin-bottom:18px">
+      <h3>How It Works</h3>
+      <p>Take turns answering maths to attack, defend, or recruit. First castle to 0 HP loses!</p>
+      <p style="margin-top:8px">🛡️ <strong style="color:white">Defend</strong> (3 questions) earns a shield. Tap your shield button anytime for 5 seconds of full protection!</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
+      <div><div class="action-hint" style="margin-bottom:5px">Player 1 Name</div>
+        <input id="pvp-name1" class="prof-name-input" style="width:100%;padding:12px 14px;font-size:1.1em" type="text" placeholder="Player 1" maxlength="15"/></div>
+      <div><div class="action-hint" style="margin-bottom:5px">Player 2 Name</div>
+        <input id="pvp-name2" class="prof-name-input" style="width:100%;padding:12px 14px;font-size:1.1em" type="text" placeholder="Player 2" maxlength="15"/></div>
+    </div>
+    <button class="big-btn btn-green" onclick="startPvP()">⚔️ &nbsp;Start Battle!</button>
+    <button class="back-btn" onclick="showScreen('mainmenu')">← Back</button>
+  </div>
+
+  <!-- ════ PVP GAME ════ -->
+  <div id="pvp-game" class="screen">
+    <!-- Both players' HP + shield -->
+    <div class="pvp-bars">
+      <div class="pvp-bar-row">
+        <div class="pvp-bar-name" id="pvp-hp-name-0">P1</div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="base-hp-track" style="flex:1"><div class="base-hp-fill" id="pvp-hp-fill-0" style="width:100%;background:#4cff50"></div></div>
+            <span class="base-hp-text" id="pvp-hp-text-0">100/100</span>
+            <button class="pvp-shield-btn" id="pvp-shield-btn-0" onclick="pvpActivateShield(0)" disabled>🛡️×<span id="pvp-shields-0">0</span></button>
+          </div>
+          <div class="pvp-shield-bar-wrap" id="pvp-shield-bar-wrap-0"><div class="pvp-shield-bar-track"><div class="pvp-shield-bar-fill" id="pvp-shield-bar-fill-0" style="width:100%"></div></div></div>
+        </div>
+      </div>
+      <div class="pvp-bar-row">
+        <div class="pvp-bar-name" id="pvp-hp-name-1">P2</div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="base-hp-track" style="flex:1"><div class="base-hp-fill" id="pvp-hp-fill-1" style="width:100%;background:#4cff50"></div></div>
+            <span class="base-hp-text" id="pvp-hp-text-1">100/100</span>
+            <button class="pvp-shield-btn" id="pvp-shield-btn-1" onclick="pvpActivateShield(1)" disabled>🛡️×<span id="pvp-shields-1">0</span></button>
+          </div>
+          <div class="pvp-shield-bar-wrap" id="pvp-shield-bar-wrap-1"><div class="pvp-shield-bar-track"><div class="pvp-shield-bar-fill" id="pvp-shield-bar-fill-1" style="width:100%"></div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pvp-turn-label" id="pvp-turn-label">⚔️ Player 1's Turn</div>
+
+    <div class="battlefield" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+        <div><div class="approach-lbl" style="margin-bottom:4px">Your Army</div><div class="bf-side" id="pvp-my-army"></div></div>
+        <span class="bf-vs">VS</span>
+        <div><div class="approach-lbl" style="margin-bottom:4px;text-align:right">Opponent</div><div class="bf-side" id="pvp-opp-army" style="flex-direction:row-reverse"></div></div>
+      </div>
+    </div>
+
+    <div class="hud" style="margin-bottom:6px">
+      <div class="hud-box"><div class="hud-label">💰 Gold</div><div class="hud-val gold" id="pvp-gold-disp">50</div></div>
+    </div>
+
+    <div class="battle-msg" id="pvp-battle-msg"></div>
+    <div class="action-hint">⚡ Choose your action!</div>
+
+    <div class="actions" id="pvp-actions-panel">
+      <button class="act-btn" id="pvp-btn-attack" onclick="pvpClickAction('attack')" style="border-color:rgba(245,197,24,.28);background:rgba(18,14,0,.7)">
+        <span class="act-icon">⚔️</span><span class="act-name">Attack</span><span class="act-cost free">FREE</span>
+      </button>
+      <button class="act-btn" id="pvp-btn-defend" onclick="pvpClickAction('defend')" style="border-color:rgba(0,191,255,.28);background:rgba(0,10,30,.7)">
+        <span class="act-icon">🛡️</span><span class="act-name">Defend</span><span class="act-cost free" style="color:#00bfff">3 Qs</span>
+      </button>
+      <button class="act-btn" id="pvp-btn-soldier" onclick="pvpClickAction('soldier')">
+        <span class="act-icon">🗡️</span><span class="act-name">Soldier</span><span class="act-cost" id="pvp-cost-soldier">10 💰</span>
+      </button>
+      <button class="act-btn" id="pvp-btn-archer" onclick="pvpClickAction('archer')">
+        <span class="act-icon">🏹</span><span class="act-name">Archer</span><span class="act-cost" id="pvp-cost-archer">25 💰</span>
+      </button>
+      <button class="act-btn" id="pvp-btn-mage" onclick="pvpClickAction('mage')">
+        <span class="act-icon">🔮</span><span class="act-name">Mage</span><span class="act-cost" id="pvp-cost-mage">45 💰</span>
+      </button>
+      <button class="act-btn" id="pvp-btn-charioteer" onclick="pvpClickAction('charioteer')">
+        <span class="act-icon">🏇</span><span class="act-name">Chariot</span><span class="act-cost" id="pvp-cost-charioteer">60 💰</span>
+      </button>
+      <button class="act-btn" id="pvp-btn-dragon" onclick="pvpClickAction('dragon')">
+        <span class="act-icon">🐉</span><span class="act-name">Dragon</span><span class="act-cost" id="pvp-cost-dragon">90 💰</span>
+      </button>
+    </div>
+
+    <div class="math-panel" id="pvp-math-panel">
+      <div class="mp-header">
+        <span class="mp-action" id="pvp-mp-action-lbl">⚔️ Attacking</span>
+        <button class="mp-cancel" onclick="pvpCancelAction()">✕ Cancel</button>
+      </div>
+      <div class="timer-track"><div class="timer-fill" id="pvp-timer-fill" style="width:100%"></div></div>
+      <div class="qcard">
+        <div class="op-lbl" id="pvp-op-lbl">Maths Question</div>
+        <div class="qtext" id="pvp-qtext">? + ? = ?</div>
+      </div>
+      <div class="choice-grid">
+        <button class="choice-btn" id="pvp-choice-0" onclick="pvpCheckAnswer(0)"></button>
+        <button class="choice-btn" id="pvp-choice-1" onclick="pvpCheckAnswer(1)"></button>
+        <button class="choice-btn" id="pvp-choice-2" onclick="pvpCheckAnswer(2)"></button>
+        <button class="choice-btn" id="pvp-choice-3" onclick="pvpCheckAnswer(3)"></button>
+      </div>
+      <div class="mp-feedback" id="pvp-mp-feedback"></div>
+    </div>
+  </div>
+
+  <!-- ════ PVP HANDOFF ════ -->
+  <div id="pvp-handoff" class="screen">
+    <div style="font-size:3em;margin-bottom:16px">⚔️</div>
+    <div class="pvp-handoff-name" id="pvp-handoff-name">Player 2</div>
+    <div class="screen-sub" style="margin-bottom:16px">It's your turn!</div>
+    <p class="pvp-cover-note">Pass the iPad — cover the screen first!</p>
+    <button class="big-btn btn-green" style="font-size:1.1em" onclick="pvpStartTurn()">▶ &nbsp;Start My Turn</button>
+  </div>
+
+  <!-- ════ PVP RESULT ════ -->
+  <div id="pvp-result" class="screen">
+    <div class="end-icon">🏆</div>
+    <div class="end-title victory" id="pvp-winner-name">Player 1</div>
+    <div class="end-sub">Wins the Battle!</div>
+    <div class="end-sub" id="pvp-loser-text" style="margin-top:-10px;margin-bottom:24px">Player 2's castle fell!</div>
+    <button class="big-btn btn-green" style="margin-bottom:12px" onclick="showScreen('pvp-setup')">⚔️ &nbsp;Play Again</button>
+    <button class="back-btn" onclick="showScreen('mainmenu')">← Main Menu</button>
+  </div>
 
   <!-- ════ 11. PROFILE ════ -->
   <div id="profile" class="screen">
