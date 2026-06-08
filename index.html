@@ -410,10 +410,59 @@
     .recruit-table .qs { color:#00bfff; font-weight:700; }
     .recruit-table .tm { color:var(--gold); font-weight:700; }
     .recruit-table .tm.dragon { color:#ff6b00; }
+
+    /* ══ PROFILE SCREEN ══ */
+    .profile-top { display:flex; gap:16px; margin-bottom:16px; align-items:flex-start; }
+    .profile-stats-col { flex:1; min-width:0; }
+    .profile-avatar-col { width:130px; flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:6px; }
+    .profile-avatar-display { font-size:3.5em; line-height:1.1; filter:drop-shadow(0 0 12px rgba(76,255,80,.4)); }
+    .profile-name-display { font-family:'Cinzel',serif; font-size:.88em; color:white; font-weight:600; text-align:center; letter-spacing:1px; word-break:break-word; }
+    .avatar-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; width:100%; margin-top:4px; }
+    .avatar-opt { font-size:1.35em; background:rgba(0,0,0,.5); border:2px solid rgba(76,255,80,.1); border-radius:8px; cursor:pointer; padding:5px 2px; transition:all .15s; line-height:1; }
+    .avatar-opt:hover { border-color:var(--green); background:rgba(76,255,80,.1); }
+    .avatar-opt.selected { border-color:var(--gold); background:rgba(245,197,24,.12); box-shadow:0 0 8px rgba(245,197,24,.3); }
+    .prof-name-row { display:flex; gap:6px; margin-top:6px; width:100%; }
+    .prof-name-input { flex:1; min-width:0; padding:7px 8px; font-family:'Rajdhani',sans-serif; font-size:.9em; font-weight:700; background:rgba(0,0,0,.6); border:2px solid rgba(76,255,80,.25); border-radius:8px; color:white; outline:none; }
+    .prof-name-input:focus { border-color:var(--green); }
+    .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+    .stat-box { background:rgba(0,0,0,.5); border:1px solid rgba(76,255,80,.12); border-radius:10px; padding:10px 8px; text-align:center; }
+    .stat-val { font-family:'Bebas Neue',sans-serif; font-size:2em; line-height:1; }
+    .stat-lbl { font-family:'Cinzel',serif; font-size:.52em; letter-spacing:2px; text-transform:uppercase; color:#4a7a40; margin-top:2px; }
+    .stat-box.wins .stat-val    { color:var(--green); }
+    .stat-box.losses .stat-val  { color:var(--blood); }
+    .stat-box.correct .stat-val { color:var(--gold); }
+    .stat-box.mistakes .stat-val{ color:#ff8800; }
+    .badges-section { margin-top:14px; }
+    .badges-section-title { font-family:'Cinzel',serif; font-size:.82em; color:var(--green); letter-spacing:3px; text-transform:uppercase; margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid rgba(76,255,80,.15); }
+    .badge-grid { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
+    .badge-card { background:rgba(0,0,0,.55); border:2px solid rgba(76,255,80,.2); border-radius:12px; padding:12px 8px 10px; width:120px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:3px; }
+    .badge-card .badge-emoji { font-size:2em; line-height:1.1; }
+    .badge-card .badge-name { font-family:'Cinzel',serif; font-size:.6em; color:white; font-weight:600; letter-spacing:.5px; }
+    .badge-card .badge-desc { font-family:'Rajdhani',sans-serif; font-size:.7em; color:#6a8a60; line-height:1.3; }
+    .badge-prog-track { width:100%; height:7px; background:rgba(0,0,0,.5); border-radius:4px; overflow:hidden; margin-top:3px; }
+    .badge-prog-fill { height:100%; background:linear-gradient(90deg,var(--green),#80ff84); border-radius:4px; transition:width .4s; }
+    .badge-prog-text { font-family:'Bebas Neue',sans-serif; font-size:.72em; color:var(--ice); letter-spacing:1px; }
+    .badge-card.completed { border-color:rgba(245,197,24,.3); background:rgba(20,15,0,.55); }
+    .badge-card.completed .badge-name { color:var(--gold); }
+    .badge-card.completed .badge-check { color:var(--gold); font-size:1em; }
+
+    /* ── Badge toast (mid-game notification) ── */
+    .badge-toast { position:fixed; right:-230px; top:45%; transform:translateY(-50%); background:rgba(5,2,0,.95); border:2px solid var(--gold); border-right:none; border-radius:12px 0 0 12px; padding:10px 14px 10px 12px; display:flex; align-items:center; gap:10px; z-index:300; transition:right .4s cubic-bezier(.22,1,.36,1); box-shadow:-4px 0 20px rgba(245,197,24,.25); pointer-events:none; }
+    .badge-toast.show { right:0; }
+    .badge-toast-emoji { font-size:1.9em; line-height:1; flex-shrink:0; }
+    .badge-toast-label { font-family:'Rajdhani',sans-serif; font-size:.65em; color:#8a7040; letter-spacing:2px; text-transform:uppercase; }
+    .badge-toast-name { font-family:'Cinzel',serif; font-size:.75em; color:var(--gold); font-weight:600; white-space:nowrap; }
   </style>
 </head>
 <body>
   <div class="sky"></div><div class="stars"></div><div class="moon"></div><div class="ground"></div>
+  <div class="badge-toast" id="badge-toast">
+    <div class="badge-toast-emoji" id="badge-toast-emoji">🏆</div>
+    <div>
+      <div class="badge-toast-label">Badge Earned!</div>
+      <div class="badge-toast-name" id="badge-toast-name">First Blood</div>
+    </div>
+  </div>
 
   <!-- ════ 1. INTRO ════ -->
   <div id="intro" class="screen active fadein">
@@ -451,6 +500,7 @@
     <div class="screen-sub" style="margin-bottom:28px">What would you like to do?</div>
     <button class="big-btn btn-green" style="margin-bottom:12px;font-size:1.1em;letter-spacing:5px" onclick="showScreen('difficulty')">⚔️ &nbsp;Play</button>
     <button class="big-btn" style="background:linear-gradient(180deg,#6b4800,#3d2800);color:var(--gold);border:2px solid rgba(245,197,24,.3);box-shadow:0 4px 0 #1a1000;margin-bottom:12px" onclick="openLeaderboard('medium')">🏆 &nbsp;Leaderboard</button>
+    <button class="big-btn" style="background:linear-gradient(180deg,#001840,#000d28);color:#60a0ff;border:2px solid rgba(80,140,255,.3);box-shadow:0 4px 0 #000818;margin-bottom:12px" onclick="renderProfileScreen();showScreen('profile')">👤 &nbsp;Profile</button>
     <button class="big-btn" style="background:transparent;border:1px solid rgba(76,255,80,.2);color:rgba(255,255,255,.5);margin-bottom:12px" onclick="showScreen('instructions')">📖 &nbsp;How to Play</button>
     <button class="back-btn" onclick="showScreen('intro')">← Back</button>
   </div>
@@ -838,6 +888,58 @@
       [{type:'knight', count:2},{type:'beast',  count:2},{type:'boss',count:1}],
     ];
 
+    const AVATARS = ['⚔️','🏹','🔮','🐉','🧙','🦸','🛡️','👑','🌟','🔥','⚡','🏰'];
+
+    const BADGE_CATS = [
+      { id:'victories', tiers:[
+        {name:'First Blood',  emoji:'🏆', desc:'Win your first game',    goal:1,   stat:'wins'},
+        {name:'Warrior',      emoji:'⚔️', desc:'Win 5 games',             goal:5,   stat:'wins'},
+        {name:'Champion',     emoji:'👑', desc:'Win 15 games',            goal:15,  stat:'wins'},
+        {name:'Legend',       emoji:'🌟', desc:'Win 50 games',            goal:50,  stat:'wins'},
+      ]},
+      { id:'kills', tiers:[
+        {name:'Slayer',       emoji:'🗡️', desc:'Defeat 10 enemies',       goal:10,  stat:'kills'},
+        {name:'Destroyer',    emoji:'💀', desc:'Defeat 50 enemies',       goal:50,  stat:'kills'},
+        {name:'Warlord',      emoji:'⚔️', desc:'Defeat 200 enemies',      goal:200, stat:'kills'},
+        {name:'Annihilator',  emoji:'🔥', desc:'Defeat 500 enemies',      goal:500, stat:'kills'},
+      ]},
+      { id:'dragon', tiers:[
+        {name:'Dragon Tamer', emoji:'🐉', desc:'Recruit 1 Dragon',        goal:1,   stat:'dragons'},
+        {name:'Dragon Rider', emoji:'🐉', desc:'Recruit 5 Dragons',       goal:5,   stat:'dragons'},
+        {name:'Dragon Master',emoji:'🐉', desc:'Recruit 15 Dragons',      goal:15,  stat:'dragons'},
+      ]},
+      { id:'speed', tiers:[
+        {name:'Quick Fighter',emoji:'⚡', desc:'Win in under 5 minutes',  goal:300, stat:'bestTime', under:true},
+        {name:'Speedster',    emoji:'⚡', desc:'Win in under 3 minutes',  goal:180, stat:'bestTime', under:true},
+        {name:'Lightning',    emoji:'⚡', desc:'Win in under 2 minutes',  goal:120, stat:'bestTime', under:true},
+      ]},
+      { id:'streak', tiers:[
+        {name:'On Fire',      emoji:'🔥', desc:'4 correct in a row',      goal:4,   stat:'maxStreak'},
+        {name:'Sharp Mind',   emoji:'🎯', desc:'8 correct in a row',      goal:8,   stat:'maxStreak'},
+        {name:'Unstoppable',  emoji:'💥', desc:'12 correct in a row',     goal:12,  stat:'maxStreak'},
+      ]},
+      { id:'scholar', tiers:[
+        {name:'Student',      emoji:'📚', desc:'50 correct answers',      goal:50,  stat:'correct'},
+        {name:'Scholar',      emoji:'📚', desc:'200 correct answers',     goal:200, stat:'correct'},
+        {name:'Genius',       emoji:'🧠', desc:'500 correct answers',     goal:500, stat:'correct'},
+      ]},
+      { id:'healer', tiers:[
+        {name:'Medic',        emoji:'🧪', desc:'Use 5 potions',           goal:5,   stat:'potionsUsed'},
+        {name:'Healer',       emoji:'🧪', desc:'Use 20 potions',          goal:20,  stat:'potionsUsed'},
+        {name:'Alchemist',    emoji:'⚗️', desc:'Use 50 potions',          goal:50,  stat:'potionsUsed'},
+      ]},
+      { id:'defender', tiers:[
+        {name:'Guardian',     emoji:'🛡️', desc:'Win with no castle damage',    goal:1, stat:'perfectWins'},
+        {name:'Defender',     emoji:'🛡️', desc:'3 wins, no castle damage',     goal:3, stat:'perfectWins'},
+        {name:'Unbreakable',  emoji:'🏰', desc:'5 wins, no castle damage',     goal:5, stat:'perfectWins'},
+      ]},
+      { id:'difficulty', tiers:[
+        {name:'Battle Ready', emoji:'🟡', desc:'Win on Medium or higher', goal:2, stat:'topDifficulty'},
+        {name:'Hardened',     emoji:'🟠', desc:'Win on Hard or higher',   goal:3, stat:'topDifficulty'},
+        {name:'Daredevil',    emoji:'☠️', desc:'Win on Impossible',       goal:4, stat:'topDifficulty'},
+      ]},
+    ];
+
     const MAX_ARMY = 4;
     const MAX_POTIONS = 5;
     const POTION_CASTLE_PCT = 0.30;  // 30% of max HP per potion on castle
@@ -856,6 +958,8 @@
     let potions=0, answerStreak=0, potionMode=false, potionVal=0, potionMax=0, potionInterval=null;
     let gameElapsedSecs=0, gameTimerInterval=null;
     let paused=false;
+    let castleDamagedThisGame=false;
+    let badgeQueue=[], badgeShowing=false;
 
     // ══════════════════════════════════════
     //  HELPERS
@@ -990,6 +1094,143 @@
     }
 
     // ══════════════════════════════════════
+    //  PROFILE & BADGES
+    // ══════════════════════════════════════
+    function loadStats(){
+      const d={wins:0,losses:0,correct:0,mistakes:0,kills:0,dragons:0,potionsUsed:0,maxStreak:0,perfectWins:0,bestTime:99999,topDifficulty:0,bestTimes:{},bestScores:{}};
+      try{return{...d,...JSON.parse(localStorage.getItem('mb_stats')||'{}')};}catch{return d;}
+    }
+    function saveStats(s){localStorage.setItem('mb_stats',JSON.stringify(s));}
+
+    function loadBadgeState(){
+      const d={};BADGE_CATS.forEach(c=>d[c.id]=0);
+      try{return{...d,...JSON.parse(localStorage.getItem('mb_badges')||'{}')};}catch{return d;}
+    }
+    function saveBadgeState(b){localStorage.setItem('mb_badges',JSON.stringify(b));}
+
+    function loadProfile(){
+      const d={name:'Player',avatar:'⚔️'};
+      try{return{...d,...JSON.parse(localStorage.getItem('mb_profile')||'{}')};}catch{return d;}
+    }
+    function saveProfileToStorage(p){localStorage.setItem('mb_profile',JSON.stringify(p));}
+
+    function checkAndAwardBadges(stats){
+      const bs=loadBadgeState(); const earned=[];
+      BADGE_CATS.forEach(cat=>{
+        let t=bs[cat.id]||0;
+        while(t<cat.tiers.length){
+          const tier=cat.tiers[t];
+          const val=tier.under?(stats[tier.stat]??99999):(stats[tier.stat]||0);
+          const met=tier.under?(val<=tier.goal):val>=tier.goal;
+          if(met){earned.push({...tier});t++;}else break;
+        }
+        bs[cat.id]=t;
+      });
+      saveBadgeState(bs);
+      return earned;
+    }
+
+    function showBadgeNotification(badge){
+      badgeQueue.push(badge);
+      if(!badgeShowing) showNextBadge();
+    }
+    function showNextBadge(){
+      if(badgeQueue.length===0){badgeShowing=false;return;}
+      badgeShowing=true;
+      const badge=badgeQueue.shift();
+      const toast=document.getElementById('badge-toast');
+      document.getElementById('badge-toast-emoji').textContent=badge.emoji;
+      document.getElementById('badge-toast-name').textContent=badge.name;
+      toast.classList.add('show');
+      setTimeout(()=>{toast.classList.remove('show');setTimeout(showNextBadge,400);},2800);
+    }
+
+    function recordWin(){
+      const s=loadStats(); s.wins++;
+      if(gameElapsedSecs<(s.bestTime??99999)) s.bestTime=gameElapsedSecs;
+      if(!s.bestTimes) s.bestTimes={};
+      if(!s.bestTimes[difficulty]||gameElapsedSecs<s.bestTimes[difficulty]) s.bestTimes[difficulty]=gameElapsedSecs;
+      if(!s.bestScores) s.bestScores={};
+      if(!s.bestScores[difficulty]||score>s.bestScores[difficulty]) s.bestScores[difficulty]=score;
+      const diffRank={easy:1,medium:2,hard:3,impossible:4};
+      s.topDifficulty=Math.max(s.topDifficulty||0,diffRank[difficulty]||0);
+      if(!castleDamagedThisGame) s.perfectWins=(s.perfectWins||0)+1;
+      saveStats(s);
+      checkAndAwardBadges(s).forEach(showBadgeNotification);
+    }
+    function recordLoss(){ const s=loadStats(); s.losses++; saveStats(s); }
+    function recordCorrect(){
+      const s=loadStats(); s.correct++;
+      if(answerStreak>(s.maxStreak||0)) s.maxStreak=answerStreak;
+      saveStats(s); checkAndAwardBadges(s).forEach(showBadgeNotification);
+    }
+    function recordMistake(){ const s=loadStats(); s.mistakes++; saveStats(s); }
+    function recordKill(){
+      const s=loadStats(); s.kills=(s.kills||0)+1; saveStats(s);
+      checkAndAwardBadges(s).forEach(showBadgeNotification);
+    }
+    function recordDragon(){
+      const s=loadStats(); s.dragons=(s.dragons||0)+1; saveStats(s);
+      checkAndAwardBadges(s).forEach(showBadgeNotification);
+    }
+    function recordPotion(){
+      const s=loadStats(); s.potionsUsed=(s.potionsUsed||0)+1; saveStats(s);
+      checkAndAwardBadges(s).forEach(showBadgeNotification);
+    }
+
+    function renderProfileScreen(){
+      const prof=loadProfile(); const stats=loadStats(); const bs=loadBadgeState();
+      document.getElementById('prof-avatar-display').textContent=prof.avatar;
+      document.getElementById('prof-name-display').textContent=prof.name;
+      document.getElementById('prof-name-input').value=prof.name;
+      document.getElementById('avatar-grid').innerHTML=AVATARS.map(a=>`<button class="avatar-opt${a===prof.avatar?' selected':''}" onclick="selectAvatar('${a}')">${a}</button>`).join('');
+      document.getElementById('stat-wins').textContent=stats.wins||0;
+      document.getElementById('stat-losses').textContent=stats.losses||0;
+      document.getElementById('stat-correct').textContent=stats.correct||0;
+      document.getElementById('stat-mistakes').textContent=stats.mistakes||0;
+      const diffs=['easy','medium','hard','impossible'];
+      const dL={easy:'🟢 Easy',medium:'🟡 Medium',hard:'🟠 Hard',impossible:'☠️ Imposs.'};
+      document.getElementById('bests-table').innerHTML=diffs.map(d=>{
+        const t=(stats.bestTimes&&stats.bestTimes[d])?formatTime(stats.bestTimes[d]):'--';
+        const sc=(stats.bestScores&&stats.bestScores[d])||'--';
+        return `<tr><td>${dL[d]}</td><td>${t}</td><td>${sc}</td></tr>`;
+      }).join('');
+      // Active badges
+      const activeBadges=BADGE_CATS.map(cat=>{
+        const t=bs[cat.id]||0; if(t>=cat.tiers.length) return null;
+        const tier=cat.tiers[t]; const val=stats[tier.stat]||0;
+        let progBar='', progText='';
+        if(tier.under){
+          const bt=stats.bestTime??99999;
+          progText=bt<99999?`Best: ${formatTime(bt)} / Goal: &lt;${formatTime(tier.goal)}`:'No wins yet';
+        } else {
+          const pct=Math.min(100,Math.floor((val/tier.goal)*100));
+          progBar=`<div class="badge-prog-track"><div class="badge-prog-fill" style="width:${pct}%"></div></div>`;
+          progText=`${val} / ${tier.goal}`;
+        }
+        return `<div class="badge-card"><div class="badge-emoji">${tier.emoji}</div><div class="badge-name">${tier.name}</div><div class="badge-desc">${tier.desc}</div>${progBar}<div class="badge-prog-text">${progText}</div></div>`;
+      }).filter(Boolean).join('');
+      document.getElementById('active-badges').innerHTML=activeBadges||'<div class="lb-empty">All badges complete! 🎉</div>';
+      // Completed badges
+      const comp=[];
+      BADGE_CATS.forEach(cat=>{const t=bs[cat.id]||0;for(let i=0;i<t;i++)comp.push(cat.tiers[i]);});
+      document.getElementById('completed-badges').innerHTML=comp.length?
+        comp.map(b=>`<div class="badge-card completed"><div class="badge-emoji">${b.emoji}</div><div class="badge-name">${b.name}</div><div class="badge-check">✓</div></div>`).join(''):
+        '<div class="lb-empty">No badges yet — start playing! 🎮</div>';
+    }
+
+    function selectAvatar(a){
+      const prof=loadProfile(); prof.avatar=a; saveProfileToStorage(prof); renderProfileScreen();
+    }
+    function saveProfile(){
+      const name=(document.getElementById('prof-name-input').value.trim())||'Player';
+      const prof=loadProfile(); prof.name=name; saveProfileToStorage(prof);
+      document.getElementById('prof-name-display').textContent=name;
+      const msg=document.getElementById('prof-save-msg'); msg.textContent='Saved! ✓';
+      setTimeout(()=>{if(msg)msg.textContent='';},2000);
+    }
+
+    // ══════════════════════════════════════
     //  NAVIGATION
     // ══════════════════════════════════════
     function chooseDiff(d){
@@ -1039,7 +1280,7 @@
       gold=d.startGold; baseHP=maxBaseHP=d.baseHP;
       waveIdx=0; score=0; totalKills=0; totalGoldEarned=d.startGold;
       myUnits=[]; enemies=[]; uidCounter=0; busy=false; panelOpen=false;
-      potions=0; answerStreak=0; potionMode=false; paused=false; updatePotionDisplay();
+      potions=0; answerStreak=0; potionMode=false; paused=false; castleDamagedThisGame=false; updatePotionDisplay();
 
       // Start with 4 free soldiers
       for(let i=0;i<4;i++)
@@ -1122,6 +1363,7 @@
       if(correctIdx>=0) document.getElementById('choice-'+correctIdx).classList.add('correct');
       showMpFeedback(`Time's up! The answer was ${currentAnswer}.`,'damage');
       answerStreak=0;
+      recordMistake();
       enemyHitsPlayer();
       setTimeout(closeMathPanel,1500);
     }
@@ -1230,6 +1472,7 @@
         const earned=DIFF[difficulty].goldPerQ;
         gold+=earned; totalGoldEarned+=earned; score+=5;
         answerStreak++;
+        recordCorrect();
         if(answerStreak>0 && answerStreak%4===0 && potions<MAX_POTIONS){
           potions++; updatePotionDisplay();
           showBattleMsg(`🧪 Potion earned! (${potions}/${MAX_POTIONS}) — ${4-((answerStreak)%4)||4} more answers for next one`,'gold');
@@ -1260,6 +1503,7 @@
         const failMsg=total>1?`Wrong! Lost on step ${recruitStep+1} of ${total}. Answer was ${currentAnswer}.`:`Wrong! The answer was ${currentAnswer}.`;
         showMpFeedback(failMsg,'damage');
         answerStreak=0;
+        recordMistake();
         enemyHitsPlayer();
         setTimeout(closeMathPanel,1500);
       }
@@ -1285,6 +1529,7 @@
         score+=enemy.reward*5;
         enemies.shift();
         approachVal=0; updateApproachBar();
+        recordKill();
         showBattleMsg(`${enemy.name} has been defeated! +${enemy.reward} 💰`,'hit');
         updateHUD(); render();
         if(enemies.length===0) waveComplete();
@@ -1296,6 +1541,7 @@
     }
 
     function doBuyUnit(type){
+      if(type==='dragon') recordDragon();
       const def=UNIT_DEFS[type];
       gold-=def.cost;
       if(myUnits.length>=MAX_ARMY){
@@ -1330,6 +1576,7 @@
       } else {
         const dmg=Math.ceil(enemy.dmg*d.dmgMult);
         baseHP=Math.max(0,baseHP-dmg);
+        castleDamagedThisGame=true;
         flashBase();
         if(baseHP<=0){ setTimeout(gameOver,400); return; }
       }
@@ -1439,6 +1686,7 @@
       const heal=Math.ceil(maxBaseHP*POTION_CASTLE_PCT);
       baseHP=Math.min(maxBaseHP,baseHP+heal);
       potions--;
+      recordPotion();
       showBattleMsg(`🧪 Castle healed +${heal} HP! (${potions} potions left)`,'hit');
       updateHUD(); updatePotionDisplay();
       if(potions<=0) exitPotionMode();
@@ -1450,6 +1698,7 @@
       if(!unit) return;
       unit.hp=unit.maxHP;
       potions--;
+      recordPotion();
       showBattleMsg(`🧪 ${UNIT_DEFS[unit.type].name} fully healed! (${potions} potions left)`,'hit');
       render(); updatePotionDisplay();
       if(potions<=0) exitPotionMode();
@@ -1541,6 +1790,7 @@
     // ══════════════════════════════════════
     function gameOver(){
       stopApproachTimer(); stopAnswerTimer(); stopGameTimer(); panelOpen=false;
+      recordLoss();
       document.getElementById('go-score').textContent=score;
       document.getElementById('go-waves').textContent=waveIdx;
       document.getElementById('go-kills').textContent=totalKills;
@@ -1550,6 +1800,7 @@
 
     function victoryScreen(){
       stopApproachTimer(); stopAnswerTimer(); stopGameTimer(); panelOpen=false;
+      recordWin();
       document.getElementById('v-time').textContent=formatTime(gameElapsedSecs);
       document.getElementById('v-score').textContent=score;
       document.getElementById('v-kills').textContent=totalKills;
@@ -1577,13 +1828,46 @@
       setTimeout(()=>el.classList.add('fadein'),10);
     }
 
-    document.getElementById('player-army').addEventListener('click',function(e){
-      if(!potionMode||potions<=0) return;
-      const card=e.target.closest('.uc');
-      if(!card) return;
-      const unitId=parseInt(card.id.replace('pu-',''));
-      potionClickUnit(unitId);
-    });
-  </script>
+  <!-- ════ 11. PROFILE ════ -->
+  <div id="profile" class="screen">
+    <div class="screen-title">👤 Profile</div>
+    <div class="profile-top">
+      <div class="profile-stats-col">
+        <div class="stat-grid">
+          <div class="stat-box wins">   <div class="stat-val" id="stat-wins">0</div>    <div class="stat-lbl">Wins</div></div>
+          <div class="stat-box losses"> <div class="stat-val" id="stat-losses">0</div>  <div class="stat-lbl">Losses</div></div>
+          <div class="stat-box correct"><div class="stat-val" id="stat-correct">0</div> <div class="stat-lbl">Correct</div></div>
+          <div class="stat-box mistakes"><div class="stat-val" id="stat-mistakes">0</div><div class="stat-lbl">Mistakes</div></div>
+        </div>
+        <div class="instr-section">
+          <h3>🏅 Personal Bests</h3>
+          <table class="lb-table" style="margin-top:6px">
+            <thead><tr><th>Difficulty</th><th>Best Time</th><th>Best Score</th></tr></thead>
+            <tbody id="bests-table"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="profile-avatar-col">
+        <div class="profile-avatar-display" id="prof-avatar-display">⚔️</div>
+        <div class="profile-name-display" id="prof-name-display">Player</div>
+        <div class="avatar-grid" id="avatar-grid"></div>
+        <div class="prof-name-row">
+          <input id="prof-name-input" class="prof-name-input" type="text" placeholder="Name" maxlength="15"/>
+          <button class="save-score-btn" style="padding:7px 12px;flex-shrink:0" onclick="saveProfile()">✓</button>
+        </div>
+        <div id="prof-save-msg" style="font-family:'Rajdhani',sans-serif;font-size:.85em;color:var(--green);min-height:18px;margin-top:2px"></div>
+      </div>
+    </div>
+    <div class="badges-section">
+      <div class="badges-section-title">🎖️ Active Badges</div>
+      <div class="badge-grid" id="active-badges"></div>
+    </div>
+    <div class="badges-section">
+      <div class="badges-section-title" style="color:rgba(245,197,24,.7)">✅ Completed</div>
+      <div class="badge-grid" id="completed-badges"></div>
+    </div>
+    <button class="back-btn" onclick="showScreen('mainmenu')" style="margin-top:16px">← Back</button>
+  </div>
+
 </body>
 </html>
