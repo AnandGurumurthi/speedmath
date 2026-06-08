@@ -1828,6 +1828,15 @@
       setTimeout(()=>el.classList.add('fadein'),10);
     }
 
+    document.getElementById('player-army').addEventListener('click',function(e){
+      if(!potionMode||potions<=0) return;
+      const card=e.target.closest('.uc');
+      if(!card) return;
+      const unitId=parseInt(card.id.replace('pu-',''));
+      potionClickUnit(unitId);
+    });
+  </script>
+
   <!-- ════ 11. PROFILE ════ -->
   <div id="profile" class="screen">
     <div class="screen-title">👤 Profile</div>
