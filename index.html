@@ -898,7 +898,7 @@
         {name:'Legend',       emoji:'🌟', desc:'Win 50 games',            goal:50,  stat:'wins'},
       ]},
       { id:'kills', tiers:[
-        {name:'Slayer',       emoji:'🗡️', desc:'Defeat 10 enemies',       goal:1,  stat:'kills'},
+        {name:'Slayer',       emoji:'🗡️', desc:'Defeat 10 enemies',       goal:10,  stat:'kills'},
         {name:'Destroyer',    emoji:'💀', desc:'Defeat 50 enemies',       goal:50,  stat:'kills'},
         {name:'Warlord',      emoji:'⚔️', desc:'Defeat 200 enemies',      goal:200, stat:'kills'},
         {name:'Annihilator',  emoji:'🔥', desc:'Defeat 500 enemies',      goal:500, stat:'kills'},
@@ -1217,6 +1217,13 @@
       document.getElementById('completed-badges').innerHTML=comp.length?
         comp.map(b=>`<div class="badge-card completed"><div class="badge-emoji">${b.emoji}</div><div class="badge-name">${b.name}</div><div class="badge-check">✓</div></div>`).join(''):
         '<div class="lb-empty">No badges yet — start playing! 🎮</div>';
+    }
+
+    function resetStats(){
+      if(!confirm('Reset all stats and badges? This cannot be undone!')) return;
+      localStorage.removeItem('mb_stats');
+      localStorage.removeItem('mb_badges');
+      renderProfileScreen();
     }
 
     function selectAvatar(a){
@@ -1876,6 +1883,7 @@
       <div class="badge-grid" id="completed-badges"></div>
     </div>
     <button class="back-btn" onclick="showScreen('mainmenu')" style="margin-top:16px">← Back</button>
+    <button class="back-btn" style="margin-top:8px;border-color:rgba(233,30,99,.25);color:rgba(233,30,99,.4)" onclick="resetStats()">🗑️ Reset All Stats & Badges</button>
   </div>
 
 </body>
