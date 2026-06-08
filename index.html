@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>SpeedMath Battle</title>
+  <title>Math Battle</title>
   <!-- iPad / iPhone home screen app behaviour -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="SpeedMath">
+  <meta name="apple-mobile-web-app-title" content="Math Battle">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#02040a">
   <link rel="manifest" href="manifest.json">
@@ -412,7 +412,7 @@
   <div class="sky"></div><div class="stars"></div><div class="moon"></div><div class="ground"></div>
 
   <!-- ════ 1. INTRO ════ -->
-  <div id="intro" class="screen active fadein">
+  <div id="intro" class="screen active fadein" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;gap:0">
     <div class="battle-stage">
       <svg class="w-intro left" viewBox="0 0 90 140" width="90" height="140" fill="none" stroke="#00bfff" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="35" cy="17" r="14" stroke-width="3"/>
@@ -424,8 +424,8 @@
         <line x1="35" y1="85" x2="52" y2="128" stroke-width="3"/>
       </svg>
       <div class="title-block">
-        <h1>⚔️<br>SpeedMath<br>Battle</h1>
-        <div class="subtitle">Build Your Army. Win the War.</div>
+        <h1>⚔️<br>Math<br>Battle</h1>
+        <div class="subtitle">Build Your Army. Crush the Enemy.</div>
       </div>
       <svg class="w-intro right" viewBox="0 0 90 140" width="90" height="140" fill="none" stroke="#ff3333" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="55" cy="17" r="14" stroke-width="3"/>
@@ -438,13 +438,11 @@
       </svg>
     </div>
     <div class="divider"></div>
-    <p class="intro-desc">
-      Answer maths questions to command your army and defeat the enemies.<br>
-      Can you survive all 5 waves?
-    </p>
-    <button class="big-btn btn-green" style="margin-bottom:12px" onclick="showScreen('instructions')">📖 &nbsp;How to Play — Read This First!</button>
-    <button class="big-btn" style="background:linear-gradient(180deg,#0060aa,#003d70);color:white;box-shadow:0 4px 0 #002244;margin-bottom:12px" onclick="showScreen('difficulty')">⚔️ &nbsp;Play Now</button>
-    <button class="big-btn" style="background:linear-gradient(180deg,#6b4800,#3d2800);color:var(--gold);border:2px solid rgba(245,197,24,.3);box-shadow:0 4px 0 #1a1000" onclick="openLeaderboard('medium')">🏆 &nbsp;Leaderboard</button>
+    <button class="big-btn btn-green" style="margin-top:18px;margin-bottom:10px;font-size:1.3em;letter-spacing:6px" onclick="showScreen('difficulty')">⚔️ &nbsp;START</button>
+    <div style="display:flex;gap:10px;width:100%">
+      <button class="big-btn" style="background:transparent;border:1px solid rgba(76,255,80,.2);color:rgba(255,255,255,.45);font-size:.75em;padding:12px" onclick="showScreen('instructions')">📖 How to Play</button>
+      <button class="big-btn" style="background:transparent;border:1px solid rgba(245,197,24,.2);color:rgba(245,197,24,.55);font-size:.75em;padding:12px" onclick="openLeaderboard('medium')">🏆 Leaderboard</button>
+    </div>
   </div>
 
   <!-- ════ 2. INSTRUCTIONS ════ -->

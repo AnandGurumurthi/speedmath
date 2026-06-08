@@ -1,4 +1,4 @@
-# ⚔️ SpeedMath Battle
+# ⚔️ Math Battle
 
 A math game built by Aditya (age 10) with help from Claude AI.
 
