@@ -412,7 +412,7 @@
   <div class="sky"></div><div class="stars"></div><div class="moon"></div><div class="ground"></div>
 
   <!-- ════ 1. INTRO ════ -->
-  <div id="intro" class="screen active fadein" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;gap:0">
+  <div id="intro" class="screen active fadein" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh">
     <div class="battle-stage">
       <svg class="w-intro left" viewBox="0 0 90 140" width="90" height="140" fill="none" stroke="#00bfff" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="35" cy="17" r="14" stroke-width="3"/>
@@ -438,11 +438,17 @@
       </svg>
     </div>
     <div class="divider"></div>
-    <button class="big-btn btn-green" style="margin-top:18px;margin-bottom:10px;font-size:1.3em;letter-spacing:6px" onclick="showScreen('difficulty')">⚔️ &nbsp;START</button>
-    <div style="display:flex;gap:10px;width:100%">
-      <button class="big-btn" style="background:transparent;border:1px solid rgba(76,255,80,.2);color:rgba(255,255,255,.45);font-size:.75em;padding:12px" onclick="showScreen('instructions')">📖 How to Play</button>
-      <button class="big-btn" style="background:transparent;border:1px solid rgba(245,197,24,.2);color:rgba(245,197,24,.55);font-size:.75em;padding:12px" onclick="openLeaderboard('medium')">🏆 Leaderboard</button>
-    </div>
+    <button class="big-btn btn-green" style="margin-top:18px;font-size:1.3em;letter-spacing:6px" onclick="showScreen('mainmenu')">⚔️ &nbsp;START</button>
+  </div>
+
+  <!-- ════ 1b. MAIN MENU ════ -->
+  <div id="mainmenu" class="screen">
+    <div class="screen-title" style="margin-bottom:6px">⚔️ Math Battle</div>
+    <div class="screen-sub" style="margin-bottom:28px">What would you like to do?</div>
+    <button class="big-btn btn-green" style="margin-bottom:12px;font-size:1.1em;letter-spacing:5px" onclick="showScreen('difficulty')">⚔️ &nbsp;Play</button>
+    <button class="big-btn" style="background:linear-gradient(180deg,#6b4800,#3d2800);color:var(--gold);border:2px solid rgba(245,197,24,.3);box-shadow:0 4px 0 #1a1000;margin-bottom:12px" onclick="openLeaderboard('medium')">🏆 &nbsp;Leaderboard</button>
+    <button class="big-btn" style="background:transparent;border:1px solid rgba(76,255,80,.2);color:rgba(255,255,255,.5);margin-bottom:12px" onclick="showScreen('instructions')">📖 &nbsp;How to Play</button>
+    <button class="back-btn" onclick="showScreen('intro')">← Back</button>
   </div>
 
   <!-- ════ 2. INSTRUCTIONS ════ -->
@@ -530,7 +536,7 @@
 
     </div>
     <button class="big-btn btn-green" style="margin-top:14px" onclick="showScreen('difficulty')">⚔️ &nbsp;Let's Play!</button>
-    <button class="back-btn" onclick="showScreen('intro')">← Back</button>
+    <button class="back-btn" onclick="showScreen('mainmenu')">← Back</button>
   </div>
 
   <!-- ════ 3. DIFFICULTY ════ -->
@@ -737,7 +743,7 @@
       <div class="srow"><span class="sl">Gold Earned</span>   <span class="sv" id="go-gold">0</span></div>
     </div>
     <button class="big-btn btn-green" onclick="showScreen('menu')" style="margin-top:16px">⚔️ Try Again</button>
-    <button class="back-btn" onclick="showScreen('intro')">← Back to Start</button>
+    <button class="back-btn" onclick="showScreen('mainmenu')">← Back to Start</button>
   </div>
 
   <!-- ════ 9. VICTORY ════ -->
@@ -762,7 +768,7 @@
       <button class="big-btn" id="view-lb-btn" style="background:linear-gradient(180deg,#6b4800,#3d2800);color:var(--gold);border:2px solid rgba(245,197,24,.3);margin-top:10px" onclick="openLeaderboard(difficulty)">🏆 View Leaderboard</button>
     </div>
     <button class="big-btn btn-green" onclick="showScreen('difficulty')" style="margin-bottom:12px">⚔️ Play Again</button>
-    <button class="back-btn" onclick="showScreen('intro')">← Back to Start</button>
+    <button class="back-btn" onclick="showScreen('mainmenu')">← Back to Start</button>
   </div>
 
   <!-- ════ 10. LEADERBOARD ════ -->
@@ -776,7 +782,7 @@
       <button class="lb-tab" data-diff="impossible" onclick="renderLeaderboard('impossible')">☠️ Impossible</button>
     </div>
     <div id="lb-table-wrap"></div>
-    <button class="back-btn" onclick="showScreen('intro')">← Back to Home</button>
+    <button class="back-btn" onclick="showScreen('mainmenu')">← Back to Home</button>
   </div>
 
   <script>
