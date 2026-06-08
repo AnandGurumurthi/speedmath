@@ -224,6 +224,10 @@
     .uc-beast .uc-hpfill   { background:#880000; }
     .uc-boss .uc-hpfill    { background:#ff00ff; }
 
+    .uc-role { font-size:.58em; line-height:1.2; }
+    .uc.uc-attacker { border-color:var(--gold) !important; box-shadow:0 0 12px rgba(245,197,24,.45) !important; }
+    .uc.uc-defender { border-color:#00bfff !important; box-shadow:0 0 12px rgba(0,191,255,.45) !important; }
+    .uc.uc-both     { border-color:#bb86fc !important; box-shadow:0 0 12px rgba(187,134,252,.45) !important; }
     .uc-hit { animation:uc-shake .35s ease !important; }
     @keyframes uc-shake { 0%,100%{transform:translateX(0) scale(1)} 30%{transform:translateX(-7px) scale(.88)} 70%{transform:translateX(7px) scale(1.1)} }
     .flash-side { animation:flash-red .3s ease; }
@@ -729,6 +733,9 @@
         <div class="bf-side" id="enemy-army" style="flex-direction:row-reverse"></div>
         <span class="bf-base">💀</span>
       </div>
+      <div style="text-align:left;font-family:'Rajdhani',sans-serif;font-size:.62em;color:#2a5020;margin-top:5px;letter-spacing:1px">
+        TAP WARRIOR: 2× = 🛡️ DEFEND &nbsp;·&nbsp; 3× = ⚔️ ATTACK
+      </div>
       <div class="wave-overlay" id="wave-overlay">
         <div class="wave-msg"    id="wave-msg">WAVE 1 COMPLETE!</div>
         <div class="wave-reward" id="wave-reward">+50 Gold Bonus!</div>
@@ -974,6 +981,8 @@
     let selectedDiff = 'medium', selectedMath = 'all';
     let difficulty, mathMode, currentAnswer, choiceValues = [];
     let panelOpen = false, pendingAction = '', busy = false, recruitStep = 0;
+    let attackerUnitId = null, defenderUnitId = null;
+    const tapCounts = {}, tapTimers = {};
     let approachVal=0, approachMax=0, approachInterval=null;
     let answerVal=0,  answerMax=0,  answerInterval=null;
     let potions=0, answerStreak=0, potionMode=false, potionVal=0, potionMax=0, potionInterval=null;
@@ -1008,6 +1017,38 @@
     function pickOp(){
       if(mathMode!=='all') return mathMode;
       return ['addition','subtraction','multiply','division'][rnd(0,3)];
+    }
+
+    // ══════════════════════════════════════
+    //  WARRIOR ROLE SELECTION (2× = defend, 3× = attack)
+    // ══════════════════════════════════════
+    function getEffectiveAttacker(){ return (attackerUnitId && myUnits.find(u=>u.id===attackerUnitId)) || myUnits[0]; }
+    function getEffectiveDefender(){ return (defenderUnitId && myUnits.find(u=>u.id===defenderUnitId)) || myUnits[0]; }
+
+    function handleUnitTap(unitId){
+      if(panelOpen||busy||potionMode) return;
+      if(!tapCounts[unitId]) tapCounts[unitId]=0;
+      tapCounts[unitId]++;
+      clearTimeout(tapTimers[unitId]);
+      tapTimers[unitId]=setTimeout(()=>{
+        const n=tapCounts[unitId]; tapCounts[unitId]=0;
+        if(n===2) setDefender(unitId);
+        else if(n>=3) setAttacker(unitId);
+      },420);
+    }
+
+    function setAttacker(unitId){
+      const u=myUnits.find(u=>u.id===unitId); if(!u) return;
+      attackerUnitId=unitId;
+      showBattleMsg(`⚔️ ${UNIT_DEFS[u.type].name} is now your attacker!`,'gold');
+      render(); updateAttackDiffLabel();
+    }
+
+    function setDefender(unitId){
+      const u=myUnits.find(u=>u.id===unitId); if(!u) return;
+      defenderUnitId=unitId;
+      showBattleMsg(`🛡️ ${UNIT_DEFS[u.type].name} is now your defender!`,'hit');
+      render();
     }
 
     // ══════════════════════════════════════
@@ -1600,7 +1641,9 @@
       gold=d.startGold; baseHP=maxBaseHP=d.baseHP;
       waveIdx=0; score=0; totalKills=0; totalGoldEarned=d.startGold;
       myUnits=[]; enemies=[]; uidCounter=0; busy=false; panelOpen=false;
-      potions=0; answerStreak=0; potionMode=false; paused=false; castleDamagedThisGame=false; updatePotionDisplay();
+      potions=0; answerStreak=0; potionMode=false; paused=false; castleDamagedThisGame=false;
+      attackerUnitId=null; defenderUnitId=null;
+      updatePotionDisplay();
 
       // Start with 4 free soldiers
       for(let i=0;i<4;i++)
@@ -1751,7 +1794,7 @@
       // Work out how hard the maths should be based on the action
       let scale = 1.0;
       if(action==='attack' && myUnits.length>0){
-        scale = UNIT_DEFS[myUnits[0].type].mathScale; // frontmost unit sets difficulty
+        scale = UNIT_DEFS[(getEffectiveAttacker()||myUnits[0]).type].mathScale; // frontmost unit sets difficulty
       } else if(action && UNIT_DEFS[action]){
         scale = UNIT_DEFS[action].mathScale;
       }
@@ -1839,7 +1882,7 @@
     // ══════════════════════════════════════
     function doAttack(){
       if(enemies.length===0){ showBattleMsg('No enemies here — gold earned! 💰','gold'); return; }
-      const unit=myUnits.length>0?myUnits[0]:{dmg:1};
+      const unit=myUnits.length>0?(getEffectiveAttacker()||myUnits[0]):{dmg:1};
       const enemy=enemies[0];
       flashSide('player-army');
       setTimeout(()=>flashUnit('eu-'+enemy.id),150);
@@ -1868,6 +1911,8 @@
         const weak=weakestUnit();
         const weakIdx=myUnits.indexOf(weak);
         const weakName=UNIT_DEFS[weak.type].name;
+        if(attackerUnitId===weak.id) attackerUnitId=null;
+        if(defenderUnitId===weak.id) defenderUnitId=null;
         myUnits.splice(weakIdx,1);
         myUnits.push({id:uid(),type,hp:def.hp,maxHP:def.hp,dmg:def.dmg});
         showBattleMsg(`${weakName} replaced by ${def.emoji} ${def.name}! 💪`,'hit');
@@ -1884,13 +1929,15 @@
       const enemy=enemies[0];
       const d=DIFF[difficulty];
       if(myUnits.length>0){
-        const unit=myUnits[0];
+        const unit=getEffectiveDefender()||myUnits[0];
         unit.hp-=enemy.dmg;
         flashUnit('pu-'+unit.id);
         flashSide('enemy-army');
         if(unit.hp<=0){
+          if(attackerUnitId===unit.id) attackerUnitId=null;
+          if(defenderUnitId===unit.id) defenderUnitId=null;
           showBattleMsg(`Your ${UNIT_DEFS[unit.type].name} has fallen! 💀`,'damage');
-          myUnits.shift();
+          myUnits.splice(myUnits.indexOf(unit),1);
           updateAttackDiffLabel();
         }
       } else {
@@ -1904,10 +1951,9 @@
     }
 
     function updateAttackDiffLabel(){
-      const el=document.getElementById('diff-attack');
-      if(!el) return;
-      if(myUnits.length>0) el.textContent=UNIT_DEFS[myUnits[0].type].mathLabel;
-      else el.textContent='🟢 Easy';
+      const el=document.getElementById('diff-attack'); if(!el) return;
+      const atk=myUnits.length>0?(getEffectiveAttacker()||myUnits[0]):null;
+      el.textContent=atk?UNIT_DEFS[atk.type].mathLabel:'🟢 Easy';
     }
 
     // ══════════════════════════════════════
@@ -2028,9 +2074,14 @@
     //  RENDER
     // ══════════════════════════════════════
     function render(){
+      const atkUnit=getEffectiveAttacker(), defUnit=getEffectiveDefender();
       document.getElementById('player-army').innerHTML=myUnits.map(u=>{
         const def=UNIT_DEFS[u.type],pct=Math.max(0,(u.hp/u.maxHP)*100);
-        return `<div class="uc uc-${u.type}" id="pu-${u.id}" title="${def.name} — HP: ${u.hp}/${u.maxHP}, Damage: ${u.dmg}">
+        const isAtk=u.id===atkUnit?.id, isDef=u.id===defUnit?.id;
+        const roleClass=isAtk&&isDef?' uc-both':isAtk?' uc-attacker':isDef?' uc-defender':'';
+        const roleBadge=isAtk&&isDef?'⚔️🛡️':isAtk?'⚔️':isDef?'🛡️':'';
+        return `<div class="uc uc-${u.type}${roleClass}" id="pu-${u.id}" title="${def.name} — HP: ${u.hp}/${u.maxHP}, Damage: ${u.dmg}">
+          ${roleBadge?`<span class="uc-role">${roleBadge}</span>`:''}
           <span style="font-size:1.3em;line-height:1">${def.emoji}</span>
           <span class="uc-name">${u.type.substring(0,3).toUpperCase()}</span>
           <span class="uc-dmg" style="color:${def.color}">dmg ${u.dmg}</span>
@@ -2149,11 +2200,10 @@
     }
 
     document.getElementById('player-army').addEventListener('click',function(e){
-      if(!potionMode||potions<=0) return;
-      const card=e.target.closest('.uc');
-      if(!card) return;
+      const card=e.target.closest('.uc'); if(!card) return;
       const unitId=parseInt(card.id.replace('pu-',''));
-      potionClickUnit(unitId);
+      if(potionMode&&potions>0){ potionClickUnit(unitId); return; }
+      handleUnitTap(unitId);
     });
   </script>
 
