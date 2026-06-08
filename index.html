@@ -415,6 +415,13 @@
     .recruit-table .tm { color:var(--gold); font-weight:700; }
     .recruit-table .tm.dragon { color:#ff6b00; }
 
+    /* ══ ONLINE ══ */
+    #online-searching.active, #online-ready.active, #online-result.active { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; }
+    .online-vs { display:flex; align-items:center; justify-content:center; gap:16px; margin:20px 0; flex-wrap:wrap; }
+    .online-pname { font-family:'Cinzel',serif; font-size:1.1em; color:white; font-weight:600; background:rgba(0,0,0,.5); border:1px solid rgba(76,255,80,.2); border-radius:10px; padding:10px 18px; }
+    .searching-spin { font-size:2.5em; animation:bobL 1.2s ease-in-out infinite; margin:20px 0; }
+    .ol-conn { font-family:'Rajdhani',sans-serif; font-size:.72em; color:#2a5020; letter-spacing:2px; text-transform:uppercase; text-align:right; margin-bottom:4px; }
+
     /* ══ PVP ══ */
     #pvp-handoff.active { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; }
     #pvp-result.active  { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; }
@@ -523,7 +530,8 @@
     <div class="screen-title" style="margin-bottom:6px">⚔️ Math Battle</div>
     <div class="screen-sub" style="margin-bottom:28px">What would you like to do?</div>
     <button class="big-btn btn-green" style="margin-bottom:12px;font-size:1.1em;letter-spacing:5px" onclick="showScreen('difficulty')">⚔️ &nbsp;Play</button>
-    <button class="big-btn" style="background:linear-gradient(180deg,#4a0000,#2d0000);color:#ff8080;border:2px solid rgba(255,80,80,.3);box-shadow:0 4px 0 #1a0000;margin-bottom:12px" onclick="showScreen('pvp-setup')">⚔️ &nbsp;1v1 Battle</button>
+    <button class="big-btn" style="background:linear-gradient(180deg,#4a0000,#2d0000);color:#ff8080;border:2px solid rgba(255,80,80,.3);box-shadow:0 4px 0 #1a0000;margin-bottom:12px" onclick="showScreen('pvp-setup')">⚔️ &nbsp;1v1 Pass &amp; Play</button>
+    <button class="big-btn" style="background:linear-gradient(180deg,#001840,#000d28);color:#60c0ff;border:2px solid rgba(0,180,255,.3);box-shadow:0 4px 0 #000818;margin-bottom:12px" onclick="showScreen('online-setup')">🌐 &nbsp;1v1 Online</button>
     <button class="big-btn" style="background:linear-gradient(180deg,#6b4800,#3d2800);color:var(--gold);border:2px solid rgba(245,197,24,.3);box-shadow:0 4px 0 #1a1000;margin-bottom:12px" onclick="openLeaderboard('medium')">🏆 &nbsp;Leaderboard</button>
     <button class="big-btn" style="background:linear-gradient(180deg,#001840,#000d28);color:#60a0ff;border:2px solid rgba(80,140,255,.3);box-shadow:0 4px 0 #000818;margin-bottom:12px" onclick="renderProfileScreen();showScreen('profile')">👤 &nbsp;Profile</button>
     <button class="big-btn" style="background:transparent;border:1px solid rgba(76,255,80,.2);color:rgba(255,255,255,.5);margin-bottom:12px" onclick="showScreen('instructions')">📖 &nbsp;How to Play</button>
@@ -1449,6 +1457,308 @@
     }
 
     // ══════════════════════════════════════
+    //  ONLINE 1v1
+    // ══════════════════════════════════════
+    const OL_HP=100, OL_GOLD=30, OL_SOLDIERS=2;
+    let online=null, olAnswerVal=0, olAnswerMax=0, olAnswerInterval=null, olCurrentAnswer=0, olChoiceValues=[];
+
+    function olMakeState(name){ return {castle:OL_HP,maxCastle:OL_HP,army:[],gold:OL_GOLD,shields:0,shieldActive:false,shieldVal:0,shieldMax:50,shieldInterval:null,name}; }
+
+    function onlineSearch(){
+      const name=(document.getElementById('online-name').value.trim())||'Player';
+      online={
+        playerId:(crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now()),
+        playerName:name, slot:0, roomId:null, opponentName:'',
+        myState:olMakeState(name), oppState:olMakeState('Opponent'),
+        pollInterval:null, lastEventTs:0, gameOver:false,
+        panelOpen:false, action:'', defendStep:0, recruitStep:0, uidCounter:0,
+      };
+      showScreen('online-searching');
+      fetch('/api/online',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'search',player_id:online.playerId,player_name:name})})
+      .then(r=>r.json()).then(d=>{ if(d.status==='matched') olMatched(d); else online.pollInterval=setInterval(olPollMatch,1800); })
+      .catch(()=>{ showScreen('online-setup'); alert('Connection error — try again!'); });
+    }
+
+    function olPollMatch(){
+      fetch(`/api/online?action=poll_match&player_id=${online.playerId}`)
+      .then(r=>r.json()).then(d=>{
+        if(d.status==='matched'){ clearInterval(online.pollInterval); olMatched(d); }
+        else if(d.status==='not_found'){ clearInterval(online.pollInterval); showScreen('online-setup'); }
+      }).catch(()=>{});
+    }
+
+    function olMatched(d){
+      online.slot=d.slot; online.roomId=d.room_id;
+      online.opponentName=d.slot===1?d.p2_name:d.p1_name;
+      document.getElementById('ol-p1-name').textContent=d.p1_name;
+      document.getElementById('ol-p2-name').textContent=d.p2_name;
+      document.getElementById('ol-ready-btn').disabled=false;
+      document.getElementById('ol-ready-status').textContent='Tap Ready when you are set!';
+      showScreen('online-ready');
+    }
+
+    function onlineReady(){
+      const btn=document.getElementById('ol-ready-btn'); btn.disabled=true; btn.textContent='✓ Ready!';
+      fetch('/api/online',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'ready',room_id:online.roomId,player_id:online.playerId,slot:online.slot})})
+      .then(r=>r.json()).then(d=>{
+        if(d.both_ready) olBeginCountdown();
+        else { document.getElementById('ol-ready-status').textContent='Waiting for opponent...'; online.pollInterval=setInterval(olPollReady,1500); }
+      });
+    }
+
+    function olPollReady(){
+      fetch(`/api/online?action=poll_ready&room_id=${online.roomId}`)
+      .then(r=>r.json()).then(d=>{ if(d.both_ready||d.status==='playing'){ clearInterval(online.pollInterval); olBeginCountdown(); } }).catch(()=>{});
+    }
+
+    function olBeginCountdown(){
+      showScreen('online-countdown');
+      let n=5; const el=document.getElementById('ol-cd-num');
+      el.className='cd-num'; el.style.color='white'; el.textContent=n;
+      const t=setInterval(()=>{
+        n--;
+        if(n>0){ el.className='cd-num'; void el.offsetWidth; el.className='cd-num'; el.textContent=n; el.style.color=n===1?'#e91e63':n===2?'#ff6b35':n===3?'#f5c518':'white'; }
+        else{ clearInterval(t); el.textContent='FIGHT!'; el.className='cd-num fight'; setTimeout(olStartGame,800); }
+      },1000);
+    }
+
+    function olStartGame(){
+      const ms=online.myState; ms.castle=ms.maxCastle=OL_HP; ms.army=[]; ms.gold=OL_GOLD; ms.shields=0; ms.shieldActive=false;
+      for(let i=0;i<OL_SOLDIERS;i++) ms.army.push({id:++online.uidCounter,type:'soldier',hp:4,maxHP:4,dmg:1});
+      const os=online.oppState; os.castle=os.maxCastle=OL_HP; os.army=[];
+      for(let i=0;i<OL_SOLDIERS;i++) os.army.push({id:90+i,type:'soldier',hp:4,maxHP:4,dmg:1});
+      online.gameOver=false; online.panelOpen=false; online.lastEventTs=0;
+      olRender(); showScreen('online-game');
+      online.pollInterval=setInterval(olPollGame,800);
+      olPostMyState();
+    }
+
+    function olPollGame(){
+      if(online.gameOver){ clearInterval(online.pollInterval); return; }
+      fetch(`/api/online?action=poll_game&room_id=${online.roomId}`)
+      .then(r=>r.json()).then(room=>{
+        if(!room) return;
+        if(room.status==='finished'){ clearInterval(online.pollInterval); if(!online.gameOver) olGameOver(room.winner_name); return; }
+        const oppSlot=online.slot===1?2:1; const pre=oppSlot===1?'p1':'p2';
+        online.oppState.castle=room[`${pre}_castle`]??OL_HP;
+        online.oppState.army=room[`${pre}_army`]||[];
+        online.oppState.shields=room[`${pre}_shields`]||0;
+        const ev=room.pending_event;
+        if(ev&&ev.actor_slot==oppSlot&&ev.ts>online.lastEventTs){ online.lastEventTs=ev.ts; olApplyOppEvent(ev); }
+        olRender();
+      }).catch(()=>{});
+    }
+
+    function olApplyOppEvent(ev){
+      const ms=online.myState; const dmg=ev.data?.dmg||1;
+      if(ev.event_type==='attack'){
+        if(ms.army.length>0){
+          ms.army[0].hp-=dmg;
+          if(ms.army[0].hp<=0){ const f=ms.army.shift(); olMsg(`💥 Your ${UNIT_DEFS[f.type].name} was defeated!`,'damage'); }
+          else olMsg(`⚔️ ${online.opponentName} hit your warrior!`,'damage');
+        } else {
+          if(ms.shieldActive){
+            clearInterval(ms.shieldInterval); ms.shieldActive=false;
+            document.getElementById('ol-shield-bar-wrap').classList.remove('show'); olUpdShield();
+            olMsg('🛡️ Your shield blocked the attack!','gold');
+          } else {
+            ms.castle=Math.max(0,ms.castle-dmg);
+            olMsg(`🏰 ${online.opponentName} hit your castle for ${dmg}!`,'damage');
+            if(ms.castle<=0){ olPostFinish(online.opponentName); olGameOver(online.opponentName); return; }
+          }
+        }
+        olPostMyState();
+      }
+      olRender();
+    }
+
+    function onlineClickAction(a){
+      if(online.panelOpen||online.gameOver) return;
+      if(a!=='attack'&&a!=='defend'){
+        const def=UNIT_DEFS[a]; const ms=online.myState;
+        if(ms.gold<def.cost){ olMsg(`Need ${def.cost} 💰!`,'damage'); return; }
+        const full=ms.army.length>=MAX_ARMY;
+        if(full){ const wk=ms.army.reduce((w,u)=>UNIT_DEFS[u.type].cost<UNIT_DEFS[w.type].cost?u:w); if(def.cost<=UNIT_DEFS[wk.type].cost){ olMsg('Army already stronger!','damage'); return; } }
+      }
+      olOpenPanel(a);
+    }
+
+    function olOpenPanel(a){
+      online.action=a; online.defendStep=0; online.recruitStep=0; online.panelOpen=true;
+      olGenQ(); olStartTimer(); olUpdLabel();
+      document.getElementById('ol-mp-feedback').textContent=''; document.getElementById('ol-mp-feedback').className='mp-feedback';
+      document.getElementById('ol-math-panel').classList.add('open'); document.getElementById('ol-actions-panel').style.opacity='.4';
+    }
+    function olClosePanel(){
+      online.panelOpen=false; olStopTimer();
+      document.getElementById('ol-math-panel').classList.remove('open'); document.getElementById('ol-actions-panel').style.opacity='1';
+      online.action=''; online.defendStep=0; online.recruitStep=0;
+    }
+    function olCancelAction(){ olClosePanel(); }
+    function olUpdLabel(){
+      const el=document.getElementById('ol-mp-action-lbl'); if(!el) return;
+      const a=online.action;
+      if(a==='attack'){ el.textContent='⚔️ Attacking!'; return; }
+      if(a==='defend'){ el.textContent=`🛡️ Defend — Step ${online.defendStep+1} of ${PVP_DEFEND_Q}`; return; }
+      if(UNIT_DEFS[a]){ const d=UNIT_DEFS[a]; el.textContent=`${d.emoji} Recruiting ${d.name} — Step ${online.recruitStep+1} of ${d.recruitQuestions}`; }
+    }
+    function olGenQ(){
+      const ops=['addition','subtraction','multiply','division']; const op=ops[rnd(0,3)]; const mn=PVP_DIFF.maxNum; const mm=PVP_DIFF.multMax;
+      let a,b,q,ans;
+      if(op==='addition'){a=rnd(1,mn);b=rnd(1,mn);q=`${a} + ${b} = ?`;ans=a+b;}
+      else if(op==='subtraction'){a=rnd(1,mn);b=rnd(1,a);q=`${a} − ${b} = ?`;ans=a-b;}
+      else if(op==='multiply'){a=rnd(1,mm);b=rnd(1,mm);q=`${a} × ${b} = ?`;ans=a*b;}
+      else{b=rnd(1,mm);ans=rnd(1,mm);a=b*ans;q=`${a} ÷ ${b} = ?`;}
+      olCurrentAnswer=ans; document.getElementById('ol-qtext').textContent=q;
+      const lbs={addition:'➕ Addition',subtraction:'➖ Subtraction',multiply:'✖️ Multiplication',division:'➗ Division'};
+      document.getElementById('ol-op-lbl').textContent=lbs[op];
+      olChoiceValues=shuffle([ans,...generateWrongAnswers(ans)]);
+      for(let i=0;i<4;i++){const b=document.getElementById('ol-choice-'+i);b.textContent=olChoiceValues[i];b.className='choice-btn';b.disabled=false;}
+    }
+    function olStartTimer(){
+      clearInterval(olAnswerInterval); olAnswerMax=PVP_DIFF.answerSecs*10; olAnswerVal=olAnswerMax; olUpdBar();
+      olAnswerInterval=setInterval(()=>{olAnswerVal=Math.max(0,olAnswerVal-1);olUpdBar();if(olAnswerVal<=0){clearInterval(olAnswerInterval);olTimeout();}},100);
+    }
+    function olStopTimer(){ clearInterval(olAnswerInterval); }
+    function olUpdBar(){ const f=document.getElementById('ol-timer-fill'),p=(olAnswerVal/olAnswerMax)*100; f.style.width=p+'%'; f.style.background=p>60?'#4cff50':p>25?'#f5c518':'#e91e63'; }
+    function olTimeout(){
+      for(let i=0;i<4;i++) document.getElementById('ol-choice-'+i).disabled=true;
+      const ci=olChoiceValues.indexOf(olCurrentAnswer); if(ci>=0) document.getElementById('ol-choice-'+ci).classList.add('correct');
+      document.getElementById('ol-mp-feedback').textContent=`Time's up! Answer was ${olCurrentAnswer}.`; document.getElementById('ol-mp-feedback').className='mp-feedback damage';
+      setTimeout(olClosePanel,1500);
+    }
+
+    function olCheckAnswer(idx){
+      if(!online.panelOpen) return; olStopTimer();
+      for(let i=0;i<4;i++) document.getElementById('ol-choice-'+i).disabled=true;
+      if(olChoiceValues[idx]===olCurrentAnswer){
+        document.getElementById('ol-choice-'+idx).classList.add('correct');
+        online.myState.gold+=12;
+        if(online.action==='attack'){
+          document.getElementById('ol-mp-feedback').textContent='Correct! ⚔️'; document.getElementById('ol-mp-feedback').className='mp-feedback hit';
+          olDoAttack(); setTimeout(olClosePanel,600);
+        } else if(online.action==='defend'){
+          online.defendStep++;
+          if(online.defendStep>=PVP_DEFEND_Q){
+            online.myState.shields=Math.min(PVP_MAX_SHIELDS,online.myState.shields+1); olUpdShield();
+            document.getElementById('ol-mp-feedback').textContent=`🛡️ Shield earned! (${online.myState.shields}/${PVP_MAX_SHIELDS})`; document.getElementById('ol-mp-feedback').className='mp-feedback hit';
+            olPostEvent('earn_shield',{}); setTimeout(olClosePanel,700);
+          } else {
+            document.getElementById('ol-mp-feedback').textContent=`Step ${online.defendStep} done! 💪`; document.getElementById('ol-mp-feedback').className='mp-feedback hit';
+            olUpdLabel(); setTimeout(()=>{olGenQ();olStartTimer();document.getElementById('ol-mp-feedback').textContent='';document.getElementById('ol-mp-feedback').className='mp-feedback';},700);
+          }
+        } else {
+          const type=online.action,def=UNIT_DEFS[type]; online.recruitStep++;
+          if(online.recruitStep>=def.recruitQuestions){
+            online.myState.gold-=def.cost; const army=online.myState.army;
+            if(army.length>=MAX_ARMY){const wk=army.reduce((w,u)=>UNIT_DEFS[u.type].cost<UNIT_DEFS[w.type].cost?u:w);army.splice(army.indexOf(wk),1);}
+            army.push({id:++online.uidCounter,type,hp:def.hp,maxHP:def.hp,dmg:def.dmg});
+            document.getElementById('ol-mp-feedback').textContent=`${def.emoji} ${def.name} recruited!`; document.getElementById('ol-mp-feedback').className='mp-feedback hit';
+            olPostMyState(); olRender(); setTimeout(olClosePanel,700);
+          } else {
+            document.getElementById('ol-mp-feedback').textContent=`Step ${online.recruitStep} done! 💪`; document.getElementById('ol-mp-feedback').className='mp-feedback hit';
+            olUpdLabel(); setTimeout(()=>{olGenQ();olStartTimer();document.getElementById('ol-mp-feedback').textContent='';document.getElementById('ol-mp-feedback').className='mp-feedback';},700);
+          }
+        }
+        olRender();
+      } else {
+        document.getElementById('ol-choice-'+idx).classList.add('wrong');
+        const ci=olChoiceValues.indexOf(olCurrentAnswer); if(ci>=0) document.getElementById('ol-choice-'+ci).classList.add('correct');
+        document.getElementById('ol-mp-feedback').textContent=`Wrong! Answer was ${olCurrentAnswer}.`; document.getElementById('ol-mp-feedback').className='mp-feedback damage';
+        setTimeout(olClosePanel,1500);
+      }
+    }
+
+    function olDoAttack(){
+      const ms=online.myState,os=online.oppState,dmg=ms.army.length>0?ms.army[0].dmg:1;
+      if(os.army.length>0){
+        os.army[0].hp-=dmg;
+        if(os.army[0].hp<=0){os.army.shift();olMsg(`💥 ${online.opponentName}'s warrior defeated!`,'hit');}
+        else olMsg(`⚔️ Hit ${online.opponentName}'s warrior for ${dmg}!`,'hit');
+      } else {
+        os.castle=Math.max(0,os.castle-dmg);
+        olMsg(`🏰 ${online.opponentName}'s castle hit for ${dmg}!`,'hit');
+        if(os.castle<=0){ olPostFinish(online.playerName); olGameOver(online.playerName); return; }
+      }
+      olPostEvent('attack',{dmg});
+    }
+
+    function olActivateShield(){
+      const ms=online.myState; if(ms.shields<=0||ms.shieldActive) return;
+      ms.shields--; ms.shieldActive=true; ms.shieldVal=50; ms.shieldMax=50;
+      const wrap=document.getElementById('ol-shield-bar-wrap'); if(wrap) wrap.classList.add('show');
+      olUpdShield(); clearInterval(ms.shieldInterval);
+      ms.shieldInterval=setInterval(()=>{
+        ms.shieldVal=Math.max(0,ms.shieldVal-1);
+        const f=document.getElementById('ol-shield-bar-fill'); if(f) f.style.width=(ms.shieldVal/ms.shieldMax*100)+'%';
+        if(ms.shieldVal<=0){clearInterval(ms.shieldInterval);ms.shieldActive=false;if(wrap)wrap.classList.remove('show');olUpdShield();}
+      },100);
+      olPostEvent('use_shield',{});
+    }
+    function olUpdShield(){ const b=document.getElementById('ol-shield-btn'),c=document.getElementById('ol-shields'); if(c)c.textContent=online.myState.shields; if(b)b.disabled=online.myState.shields<=0||online.myState.shieldActive; }
+
+    function olMsg(msg,cls){ const el=document.getElementById('ol-battle-msg'); el.textContent=msg; el.className='battle-msg '+cls; clearTimeout(el._t); el._t=setTimeout(()=>{el.textContent='';el.className='battle-msg';},2500); }
+
+    function olRender(){
+      const ms=online.myState,os=online.oppState;
+      const myP=Math.max(0,ms.castle/ms.maxCastle*100), opP=Math.max(0,os.castle/os.maxCastle*100);
+      document.getElementById('ol-my-hp-fill').style.cssText=`width:${myP}%;background:${myP>60?'#4cff50':myP>30?'#f5c518':'#e91e63'}`;
+      document.getElementById('ol-my-hp-text').textContent=`${Math.max(0,ms.castle)}/${ms.maxCastle}`;
+      document.getElementById('ol-opp-hp-fill').style.cssText=`width:${opP}%;background:${opP>60?'#4cff50':opP>30?'#f5c518':'#e91e63'}`;
+      document.getElementById('ol-opp-hp-text').textContent=`${Math.max(0,os.castle)}/${os.maxCastle}`;
+      document.getElementById('ol-my-name').textContent=online.playerName;
+      document.getElementById('ol-opp-name').textContent=online.opponentName;
+      document.getElementById('ol-gold-disp').textContent=ms.gold; olUpdShield();
+      const ucHtml=u=>{const d=UNIT_DEFS[u.type],p=Math.max(0,u.hp/u.maxHP*100);return`<div class="uc uc-${u.type}"><span style="font-size:1.3em">${d.emoji}</span><span class="uc-name">${u.type.substring(0,3).toUpperCase()}</span><span class="uc-dmg" style="color:${d.color}">dmg ${u.dmg}</span><div class="uc-hpbar"><div class="uc-hpfill" style="width:${p}%"></div></div></div>`;};
+      const empty='<span style="color:#3a4a30;font-family:Rajdhani;font-size:.85em;padding:4px">None</span>';
+      document.getElementById('ol-my-army').innerHTML=ms.army.map(ucHtml).join('')||empty;
+      document.getElementById('ol-opp-army').innerHTML=os.army.map(ucHtml).join('')||empty;
+      const full=ms.army.length>=MAX_ARMY,weakCost=full&&ms.army.length>0?UNIT_DEFS[ms.army.reduce((w,u)=>UNIT_DEFS[u.type].cost<UNIT_DEFS[w.type].cost?u:w).type].cost:0;
+      ['soldier','archer','mage','charioteer','dragon'].forEach(type=>{
+        const btn=document.getElementById('ol-btn-'+type),costEl=document.getElementById('ol-cost-'+type),cost=UNIT_DEFS[type].cost,canRep=full&&cost>weakCost;
+        if(costEl){costEl.textContent=cost+' 💰';costEl.className='act-cost'+(ms.gold>=cost?'':' cant');}
+        if(btn) btn.classList.toggle('locked',ms.gold<cost||(full&&!canRep));
+      });
+    }
+
+    async function olPostEvent(event_type,data){
+      const ms=online.myState;
+      try{ await fetch('/api/online',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'event',room_id:online.roomId,slot:online.slot,event_type,data,my_state:{castle:ms.castle,gold:ms.gold,army:ms.army,shields:ms.shields}})}); }catch(e){}
+    }
+    async function olPostMyState(){
+      const ms=online.myState;
+      try{ await fetch('/api/online',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'event',room_id:online.roomId,slot:online.slot,event_type:'state_update',data:{},my_state:{castle:ms.castle,gold:ms.gold,army:ms.army,shields:ms.shields}})}); }catch(e){}
+    }
+    async function olPostFinish(winnerName){
+      try{ await fetch('/api/online',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'finish',room_id:online.roomId,winner_name:winnerName})}); }catch(e){}
+    }
+
+    function onlineForfeit(){
+      if(!confirm('Forfeit? Your opponent wins!')) return;
+      clearInterval(online.pollInterval); online.gameOver=true;
+      olPostEvent('forfeit',{}); olPostFinish(online.opponentName);
+      recordLoss(); olGameOver(online.opponentName);
+    }
+
+    function onlineCancelSearch(){
+      clearInterval(online?.pollInterval);
+      if(online?.playerId){ fetch('/api/online',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'cancel',player_id:online.playerId})}).catch(()=>{}); }
+      online=null; showScreen('mainmenu');
+    }
+
+    function olGameOver(winnerName){
+      clearInterval(online?.pollInterval); olStopTimer(); if(online) online.gameOver=true;
+      const won=winnerName===online?.playerName;
+      document.getElementById('ol-result-icon').textContent=won?'🏆':'💀';
+      document.getElementById('ol-result-title').textContent=won?'Victory!':'Defeated!';
+      document.getElementById('ol-result-title').className='end-title '+(won?'victory':'defeat');
+      document.getElementById('ol-result-sub').textContent=won?`${online.opponentName}'s castle fell!`:`${online.opponentName} won!`;
+      showScreen('online-result');
+    }
+
+    // ══════════════════════════════════════
     //  PROFILE & BADGES
     // ══════════════════════════════════════
     function loadStats(){
@@ -2210,6 +2520,143 @@
       handleUnitTap(unitId);
     });
   </script>
+
+  <!-- ════ ONLINE SETUP ════ -->
+  <div id="online-setup" class="screen">
+    <div class="screen-title">🌐 Online 1v1</div>
+    <div class="screen-sub" style="margin-bottom:16px">Real-Time Battle</div>
+    <div class="instr-section" style="margin-bottom:18px">
+      <h3>How It Works</h3>
+      <p>Enter your name and tap Search. If another player is also searching you'll be matched instantly. The faster your maths, the more you attack!</p>
+      <p style="margin-top:8px">⚠️ No pause. Forfeit = instant loss.</p>
+    </div>
+    <input id="online-name" class="prof-name-input" style="width:100%;padding:12px 14px;font-size:1.2em;margin-bottom:16px" type="text" placeholder="Your name" maxlength="15"/>
+    <button class="big-btn btn-green" onclick="onlineSearch()">🔍 &nbsp;Search for Opponent</button>
+    <button class="back-btn" onclick="showScreen('mainmenu')">← Back</button>
+  </div>
+
+  <!-- ════ ONLINE SEARCHING ════ -->
+  <div id="online-searching" class="screen">
+    <div class="screen-title">🔍 Searching...</div>
+    <div class="searching-spin">⚔️</div>
+    <div class="screen-sub" style="margin-bottom:8px">Looking for an opponent</div>
+    <p style="color:#4a7a40;font-family:'Rajdhani',sans-serif;font-size:.95em;margin-bottom:32px;text-align:center">Another player must also be searching at the same time</p>
+    <button class="back-btn" onclick="onlineCancelSearch()">✕ &nbsp;Cancel</button>
+  </div>
+
+  <!-- ════ ONLINE READY ════ -->
+  <div id="online-ready" class="screen">
+    <div class="screen-title" style="color:var(--gold)">⚔️ Match Found!</div>
+    <div class="online-vs">
+      <div class="online-pname" id="ol-p1-name">Player 1</div>
+      <span style="font-family:'Bebas Neue';font-size:1.4em;color:#3a5a30">VS</span>
+      <div class="online-pname" id="ol-p2-name">Player 2</div>
+    </div>
+    <button class="big-btn btn-green" id="ol-ready-btn" style="margin-bottom:12px" onclick="onlineReady()">⚔️ &nbsp;Ready to Battle!</button>
+    <div id="ol-ready-status" style="font-family:'Rajdhani',sans-serif;font-size:.9em;color:#4a7a40;letter-spacing:2px;margin-top:8px">Waiting for opponent...</div>
+  </div>
+
+  <!-- ════ ONLINE COUNTDOWN ════ -->
+  <div id="online-countdown" class="screen">
+    <div class="cd-label">Get Ready...</div>
+    <div class="cd-num" id="ol-cd-num">5</div>
+  </div>
+
+  <!-- ════ ONLINE GAME ════ -->
+  <div id="online-game" class="screen">
+    <div class="ol-conn" id="ol-conn">● LIVE</div>
+    <div class="pvp-bars">
+      <div class="pvp-bar-row">
+        <div class="pvp-bar-name active" id="ol-my-name">Me</div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="base-hp-track" style="flex:1"><div class="base-hp-fill" id="ol-my-hp-fill" style="width:100%;background:#4cff50"></div></div>
+            <span class="base-hp-text" id="ol-my-hp-text">100/100</span>
+            <button class="pvp-shield-btn" id="ol-shield-btn" onclick="olActivateShield()" disabled>🛡️×<span id="ol-shields">0</span></button>
+          </div>
+          <div class="pvp-shield-bar-wrap" id="ol-shield-bar-wrap"><div class="pvp-shield-bar-track"><div class="pvp-shield-bar-fill" id="ol-shield-bar-fill" style="width:100%"></div></div></div>
+        </div>
+      </div>
+      <div class="pvp-bar-row">
+        <div class="pvp-bar-name" id="ol-opp-name">Opponent</div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="base-hp-track" style="flex:1"><div class="base-hp-fill" id="ol-opp-hp-fill" style="width:100%;background:#4cff50"></div></div>
+            <span class="base-hp-text" id="ol-opp-hp-text">100/100</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="battlefield" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+        <div><div class="approach-lbl" style="margin-bottom:4px">Your Army</div><div class="bf-side" id="ol-my-army"></div></div>
+        <span class="bf-vs">VS</span>
+        <div><div class="approach-lbl" style="margin-bottom:4px;text-align:right">Opponent</div><div class="bf-side" id="ol-opp-army" style="flex-direction:row-reverse"></div></div>
+      </div>
+    </div>
+
+    <div class="hud" style="margin-bottom:6px">
+      <div class="hud-box"><div class="hud-label">💰 Gold</div><div class="hud-val gold" id="ol-gold-disp">30</div></div>
+    </div>
+
+    <div class="battle-msg" id="ol-battle-msg"></div>
+    <div class="action-hint">⚡ Answer fast — both players are live!</div>
+
+    <div class="actions" id="ol-actions-panel">
+      <button class="act-btn" id="ol-btn-attack" onclick="onlineClickAction('attack')" style="border-color:rgba(245,197,24,.28);background:rgba(18,14,0,.7)">
+        <span class="act-icon">⚔️</span><span class="act-name">Attack</span><span class="act-cost free">FREE</span>
+      </button>
+      <button class="act-btn" id="ol-btn-defend" onclick="onlineClickAction('defend')" style="border-color:rgba(0,191,255,.28);background:rgba(0,10,30,.7)">
+        <span class="act-icon">🛡️</span><span class="act-name">Defend</span><span class="act-cost free" style="color:#00bfff">3 Qs</span>
+      </button>
+      <button class="act-btn" id="ol-btn-soldier" onclick="onlineClickAction('soldier')">
+        <span class="act-icon">🗡️</span><span class="act-name">Soldier</span><span class="act-cost" id="ol-cost-soldier">10 💰</span>
+      </button>
+      <button class="act-btn" id="ol-btn-archer" onclick="onlineClickAction('archer')">
+        <span class="act-icon">🏹</span><span class="act-name">Archer</span><span class="act-cost" id="ol-cost-archer">25 💰</span>
+      </button>
+      <button class="act-btn" id="ol-btn-mage" onclick="onlineClickAction('mage')">
+        <span class="act-icon">🔮</span><span class="act-name">Mage</span><span class="act-cost" id="ol-cost-mage">45 💰</span>
+      </button>
+      <button class="act-btn" id="ol-btn-charioteer" onclick="onlineClickAction('charioteer')">
+        <span class="act-icon">🏇</span><span class="act-name">Chariot</span><span class="act-cost" id="ol-cost-charioteer">60 💰</span>
+      </button>
+      <button class="act-btn" id="ol-btn-dragon" onclick="onlineClickAction('dragon')">
+        <span class="act-icon">🐉</span><span class="act-name">Dragon</span><span class="act-cost" id="ol-cost-dragon">90 💰</span>
+      </button>
+    </div>
+
+    <div class="math-panel" id="ol-math-panel">
+      <div class="mp-header">
+        <span class="mp-action" id="ol-mp-action-lbl">⚔️ Attacking</span>
+        <button class="mp-cancel" onclick="olCancelAction()">✕ Cancel</button>
+      </div>
+      <div class="timer-track"><div class="timer-fill" id="ol-timer-fill" style="width:100%"></div></div>
+      <div class="qcard">
+        <div class="op-lbl" id="ol-op-lbl">Maths Question</div>
+        <div class="qtext" id="ol-qtext">? + ? = ?</div>
+      </div>
+      <div class="choice-grid">
+        <button class="choice-btn" id="ol-choice-0" onclick="olCheckAnswer(0)"></button>
+        <button class="choice-btn" id="ol-choice-1" onclick="olCheckAnswer(1)"></button>
+        <button class="choice-btn" id="ol-choice-2" onclick="olCheckAnswer(2)"></button>
+        <button class="choice-btn" id="ol-choice-3" onclick="olCheckAnswer(3)"></button>
+      </div>
+      <div class="mp-feedback" id="ol-mp-feedback"></div>
+    </div>
+
+    <button class="back-btn" style="margin-top:10px;border-color:rgba(233,30,99,.25);color:rgba(233,30,99,.4)" onclick="onlineForfeit()">🏳️ &nbsp;Forfeit</button>
+  </div>
+
+  <!-- ════ ONLINE RESULT ════ -->
+  <div id="online-result" class="screen">
+    <div class="end-icon" id="ol-result-icon">🏆</div>
+    <div class="end-title victory" id="ol-result-title">Victory!</div>
+    <div class="end-sub" id="ol-result-sub">Opponent's castle fell!</div>
+    <button class="big-btn btn-green" style="margin-top:24px;margin-bottom:12px" onclick="showScreen('online-setup')">🌐 Play Again</button>
+    <button class="back-btn" onclick="showScreen('mainmenu')">← Main Menu</button>
+  </div>
 
   <!-- ════ PVP SETUP ════ -->
   <div id="pvp-setup" class="screen">
