@@ -295,6 +295,20 @@ You're reading that document now.
 
 ---
 
+## The Race — "first one to complete 2 waves first wins"
+
+> **Aditya:** "i had another idea for a competition. first we need to name the 1v1 online to '1v1 online battle' my idea was that we can make another 1 v 1 battle calle '1v1 online speed battle'. also the font for 1v1 was not that distinguishable so can you make the 'v' lowercase. also can we hide the pass and play for now? not delete it but just hide it for now. i the 1v1 online speed battle both the competiters get the same questions but the first one to complete 2 waves first wins"
+
+That's a lot of ideas in one message — and every single one is precise.
+
+He noticed that "1V1" looked wrong (the uppercase CSS was making the V blend into the 1s). He knew Pass & Play wasn't ready to show but didn't want to lose the code. He had a name ready — "1v1 Online Speed Battle." And the core mechanic in one sentence: same enemies, race to 2 waves, first done wins.
+
+No attacking the other player. No shields. Just: beat the enemies faster than your opponent.
+
+He didn't need to explain why it was interesting. It's obvious. Head-to-head, same challenge, the better mathematician wins.
+
+---
+
 ## What Got Built
 
 | | |
@@ -307,8 +321,9 @@ You're reading that document now.
 | **Badges** | 9 categories × up to 4 tiers = 30 total badges |
 | **Profile** | Stats, personal bests, avatar picker, cumulative score |
 | **Leaderboard** | Global top 10 per difficulty, stored in Supabase |
-| **Pass & Play 1v1** | Turn-based local battle with shields, recruit, and handoff screen |
-| **Online 1v1** | Real-time matchmaking, live battle, forfeit system |
+| **Pass & Play 1v1** | Turn-based local battle with shields, recruit, and handoff screen (hidden from menu, code preserved) |
+| **Online 1v1 Battle** | Real-time matchmaking, live battle, forfeit system |
+| **Online Speed Battle** | Both players race the same 2 waves simultaneously; first to finish wins |
 | **Deployment** | Vercel + GitHub auto-deploy, installable as iPad home screen app |
 | **Code** | ~3,000 lines, single HTML file + 2 Vercel API routes |
 

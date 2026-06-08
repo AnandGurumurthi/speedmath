@@ -5,8 +5,8 @@
 **Live URL:** https://speedmath-gamma.vercel.app  
 **GitHub:** https://github.com/AnandGurumurthi/speedmath  
 **Built by:** Aditya (age 10) with Claude  
-**Last updated:** 2026-06-08  
-**Current version:** v1.2
+**Last updated:** 2026-06-07  
+**Current version:** v1.3
 
 ---
 
@@ -29,6 +29,7 @@
 | v1.0 | 2026-06-07 | 1v1 Pass & Play — turn-based local battle with shields, recruit, handoff screen |
 | v1.1 | 2026-06-08 | 1v1 Online — real-time matchmaking, Supabase-backed, simultaneous play |
 | v1.2 | 2026-06-08 | Shield timer fixed (pauses on owner's turn), total score in profile, retreat = loss |
+| v1.3 | 2026-06-07 | 1v1 Online Speed Battle mode, renamed 1v1 Online → 1v1 Online Battle, Pass & Play hidden, "v" lowercase fix |
 
 ---
 
@@ -40,8 +41,9 @@ intro → [START] → mainmenu
     ├── [Play] → difficulty → math type → prestart → countdown → game
     │                                                   game → gameover
     │                                                   game → victory → leaderboard
-    ├── [1v1 Pass & Play] → pvp-setup → pvp-game ⇄ pvp-handoff (loop) → pvp-result
-    ├── [1v1 Online] → online-setup → online-searching → online-ready → online-countdown → online-game → online-result
+    ├── [1v1 Pass & Play] → pvp-setup → pvp-game ⇄ pvp-handoff (loop) → pvp-result   ← HIDDEN (not deleted)
+    ├── [1v1 Online Battle] → online-setup → online-searching → online-ready → online-countdown → online-game → online-result
+    ├── [1v1 Online Speed Battle] → speed-setup → online-searching → online-ready → online-countdown → speed-game → speed-result
     ├── [Leaderboard] → leaderboard
     ├── [Profile] → profile
     └── [How to Play] → instructions
@@ -349,7 +351,38 @@ Accessible from the main menu. All data stored locally in `localStorage`.
 
 ---
 
-### 18. Forfeit / Retreat
+### 18. 1v1 Online Speed Battle
+
+**Concept:** Both players race through the same 2 waves of enemies simultaneously. First to clear both waves wins. Unlike Online Battle, there is no attacking the opponent — it is a pure race.
+
+**Matchmaking:** Same flow as Online Battle (search → match → ready → countdown). Speed players have a `sp-` prefix on their player ID, ensuring they only match with other speed players (never accidentally matched with Online Battle players).
+
+**Game:**
+- Each player independently fights Wave 1 (4× Grunt) and Wave 2 (3× Grunt, 2× Earcher)
+- Medium difficulty settings: 10s approach, 10s answer timer, numbers up to 25
+- Starting army: 2 Soldiers. Starting gold: 30
+- Enemy approach timer works the same as single player — enemies auto-attack if the bar fills
+- Actions: ⚔️ Attack and all warrior recruits. No Defend/Shields (speed mode only)
+- Correct attack → damage front enemy. Enemy killed → approach bar resets
+- Wrong/timeout → enemy gets a free hit on first warrior (or castle if no warriors)
+- Castle HP reaches 0 → loss
+
+**Wave completion:**
+- Complete Wave 1: gold bonus (100), castle heals 20%, Wave 2 starts
+- Complete Wave 2: you win — post finish to server, opponent sees result on next poll
+
+**Race Progress Bar:**
+- Visible at the top of the game screen at all times
+- Shows your name + current wave / enemies left
+- Shows opponent's name + their current wave (polled every 800ms via `p1_shields`/`p2_shields` columns, repurposed from the Online Battle shield count)
+
+**Win condition:** First player to clear Wave 2 posts a finish event. The opponent's next poll detects `status: finished` and shows the result.
+
+**No pause. Forfeit = instant loss.**
+
+---
+
+### 19. Forfeit / Retreat
 
 - In the **main single-player game:** tapping "← Retreat to Menu" counts as a **loss** and saves the current score to profile stats.
 - In **online 1v1:** tapping "🏳️ Forfeit" (with confirmation) counts as a loss, the opponent wins, and the result is posted to the server.
