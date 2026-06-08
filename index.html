@@ -123,6 +123,10 @@
     .weapon-btn.all-btn { grid-column:1/-1; border-color:rgba(245,197,24,.35); color:var(--gold); }
     .weapon-btn.all-btn:hover { border-color:var(--gold); background:rgba(245,197,24,.08); box-shadow:0 0 20px rgba(245,197,24,.2); }
 
+    /* ══ INTRO / MAIN MENU ══ */
+    #intro.active    { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; }
+    #mainmenu.active { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; }
+
     /* ══ PRE-START ══ */
     #prestart { display:none; }
     #prestart.active { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; }
@@ -412,7 +416,7 @@
   <div class="sky"></div><div class="stars"></div><div class="moon"></div><div class="ground"></div>
 
   <!-- ════ 1. INTRO ════ -->
-  <div id="intro" class="screen active fadein" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh">
+  <div id="intro" class="screen active fadein">
     <div class="battle-stage">
       <svg class="w-intro left" viewBox="0 0 90 140" width="90" height="140" fill="none" stroke="#00bfff" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="35" cy="17" r="14" stroke-width="3"/>
