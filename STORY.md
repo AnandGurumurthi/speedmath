@@ -349,13 +349,13 @@ He built something real, deployed it to the internet, and his friends played it.
 
 ## Session 4 — The Team Battle
 
-Aditya came back with an idea he'd been sitting on since the last session.
+Anand handed over after getting Claude up to speed, but before stepping away he caught something:
 
-> **Aditya:** "arent there 4 files?"
+> **Anand:** "arent there 4 files?"
 
-He'd noticed. He was checking.
+There were four — SPEC.md, TECH.md, STORY.md, and LEARNING.md. Claude had only read three. Anand noticed. The fourth was read.
 
-Then, after getting context:
+Then Aditya took over with the idea he'd been sitting on:
 
 > **Aditya:** "last time i mentioned a team battle. my ideas for the team battle online was that 2 people online work together to defeat 3 waves. in these 3 waves if damage is taken both people see that the damage was taken but if damage given the same thing happens. both people try to win but since it is 2 people working together the enemies have more health and are harder to defeat"
 
