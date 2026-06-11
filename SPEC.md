@@ -5,8 +5,8 @@
 **Live URL:** https://speedmath-gamma.vercel.app  
 **GitHub:** https://github.com/AnandGurumurthi/speedmath  
 **Built by:** Aditya (age 10) with Claude  
-**Last updated:** 2026-06-07  
-**Current version:** v1.3
+**Last updated:** 2026-06-11  
+**Current version:** v1.4
 
 ---
 
@@ -30,6 +30,7 @@
 | v1.1 | 2026-06-08 | 1v1 Online — real-time matchmaking, Supabase-backed, simultaneous play |
 | v1.2 | 2026-06-08 | Shield timer fixed (pauses on owner's turn), total score in profile, retreat = loss |
 | v1.3 | 2026-06-07 | 1v1 Online Speed Battle mode, renamed 1v1 Online → 1v1 Online Battle, Pass & Play hidden, "v" lowercase fix |
+| v1.4 | 2026-06-11 | Online Team Battle — 2-player co-op vs 3 waves of harder enemies, shared castle/army/gold |
 
 ---
 
@@ -44,6 +45,7 @@ intro → [START] → mainmenu
     ├── [1v1 Pass & Play] → pvp-setup → pvp-game ⇄ pvp-handoff (loop) → pvp-result   ← HIDDEN (not deleted)
     ├── [1v1 Online Battle] → online-setup → online-searching → online-ready → online-countdown → online-game → online-result
     ├── [1v1 Online Speed Battle] → speed-setup → online-searching → online-ready → online-countdown → speed-game → speed-result
+    ├── [Online Team Battle] → team-setup → online-searching → online-ready → online-countdown → team-game → team-result
     ├── [Leaderboard] → leaderboard
     ├── [Profile] → profile
     └── [How to Play] → instructions
@@ -387,6 +389,44 @@ Accessible from the main menu. All data stored locally in `localStorage`.
 - In the **main single-player game:** tapping "← Retreat to Menu" counts as a **loss** and saves the current score to profile stats.
 - In **online 1v1:** tapping "🏳️ Forfeit" (with confirmation) counts as a loss, the opponent wins, and the result is posted to the server.
 - In **pass & play:** no explicit forfeit — players can just stop.
+
+---
+
+### 20. Online Team Battle (Co-op)
+
+**Concept:** Two players team up online to fight together through 3 waves of harder enemies. Everything is shared — one castle, one army, one gold pool. Both players attack simultaneously in real time.
+
+**Matchmaking:** Same flow as Online Battle (search → match → ready → countdown). Team players have a `co-` prefix on their player ID, ensuring they only match with other team players.
+
+**Game:**
+- Both players fight the same shared enemies simultaneously
+- Shared state: castle HP, army, gold, enemies
+- Starting setup: 3 Soldiers, 50 gold, 150 castle HP
+- Medium difficulty settings: 10s approach, 10s answer timer, numbers up to 25
+- Actions: ⚔️ Attack and all warrior recruits. No Defend/Shields (combat focus)
+- Correct attack → damage front enemy (both players see it on next poll, ~800ms)
+- Wrong/timeout → enemy gets a free hit on first warrior (or castle if no warriors)
+- Enemy approach timer runs on each client; both post auto-attack results to shared state
+
+**3 Waves (harder than normal — enemies have 1.5× HP):**
+
+| Wave | Enemies |
+|------|---------|
+| 1 | 3× Knight 🛡️, 2× Earcher 🎯 |
+| 2 | 2× Knight 🛡️, 3× Beast 🐗 |
+| 3 | 2× Beast 🐗, 2× Boss 👿 |
+
+**Between waves:** gold bonus (+150), castle heals 20% of max HP.
+
+**State sync:** Shared state is stored server-side in the `p1_state` columns (p1_castle, p1_army JSON blob, p1_gold). Both players always write to p1 columns via `event_type: co_state`. Last write wins — occasional micro-conflicts are acceptable for a casual game.
+
+**Approach timer sync:** When a player kills an enemy, they set `lastApproachReset = Date.now()` in the state blob. The other player reads this on next poll and resets their own approach timer, keeping both roughly in sync.
+
+**Win condition:** Both players clear Wave 3 → winner posted as `"TEAM"`. Both see a shared victory screen.
+
+**Loss condition:** Castle HP reaches 0 → winner posted as `"ENEMY"`. Both see a shared defeat screen.
+
+**No pause. Forfeit = loss for both players.**
 
 ---
 

@@ -4,8 +4,8 @@
 
 > **Editing rule:** Always append. Never delete or overwrite existing content. When something changes (e.g. a file is split, debt is resolved, a new API is added), add a new dated section or annotate the existing entry with "✅ Resolved in vX.Y" or "Updated in vX.Y". The full technical evolution of this project must be preserved.
 
-**Last updated:** 2026-06-07  
-**Current version:** v1.3
+**Last updated:** 2026-06-11  
+**Current version:** v1.4
 
 ---
 
@@ -67,7 +67,8 @@ In DOM order:
 11. `#leaderboard` — global leaderboard
 12. Online Battle screens: `#online-setup`, `#online-searching`, `#online-ready`, `#online-countdown`, `#online-game`, `#online-result`
 13. Speed Battle screens: `#speed-setup`, `#speed-game`, `#speed-result` — `#online-searching`, `#online-ready`, `#online-countdown` are **shared** with Online Battle (mode determined by `currentOnlineMode` variable)
-14. PvP screens: `#pvp-setup`, `#pvp-game`, `#pvp-handoff`, `#pvp-result` — **hidden from menu** (Pass & Play button has `display:none`; screens still exist in DOM)
+14. Team Battle screens: `#team-setup`, `#team-game`, `#team-result` — also shares `#online-searching`, `#online-ready`, `#online-countdown` (same `currentOnlineMode` pattern, value `'team'`)
+15. PvP screens: `#pvp-setup`, `#pvp-game`, `#pvp-handoff`, `#pvp-result` — **hidden from menu** (Pass & Play button has `display:none`; screens still exist in DOM)
 15. `#profile` — **outside `<script>` tag** (see note below)
 
 > ⚠️ **Known debt:** `#profile` ended up after the closing `</script>` tag due to an earlier insertion accident. This is valid HTML and works correctly, but is inconsistent with the other screens. Fix: move it inside `<body>` before `<script>` during next refactor.
@@ -84,6 +85,7 @@ In DOM order:
 | PAUSE | ~20 | `togglePause()` |
 | ONLINE 1v1 | ~300 | All `online*` and `ol*` functions |
 | SPEED BATTLE | ~280 | All `sp*` and `speed*` functions; `currentOnlineMode` var |
+| TEAM BATTLE | ~310 | All `team*` and `tm*` functions; `team` state object |
 | LEADERBOARD | ~50 | `submitScore()`, `renderLeaderboard()`, `openLeaderboard()` |
 | PROFILE & BADGES | ~150 | `loadStats/saveStats`, badge checking, `renderProfileScreen()`, `saveProfile()`, `resetStats()` |
 | NAVIGATION | ~20 | `chooseDiff()`, `chooseMath()`, `showScreen()` |
@@ -133,7 +135,9 @@ POST action=cancel       → remove self from queue
 
 **Polling strategy:** client calls `poll_game` every 800ms. Online Battle: compares `pending_event.ts` to `lastEventTs`; applies opponent event locally. Speed Battle: reads `p{oppSlot}_shields` as opponent's waves completed.
 
-**Mode detection (no schema change):** Speed players use `player_id = "sp-" + uuid`. The search action filters `player_id=like.sp-*` for speed searches, `player_id=not.like.sp-*` for battle searches. Client tracks mode via `currentOnlineMode` variable (`'battle'` or `'speed'`). The shared `#online-searching / #online-ready / #online-countdown` screens are reused for both modes; at countdown end, `currentOnlineMode` decides whether to call `olStartGame()` or `spStartGame()`.
+**Mode detection (no schema change):** Speed players use `player_id = "sp-" + uuid`. Team players use `player_id = "co-" + uuid`. API filters each prefix to only match players of the same mode. Client tracks mode via `currentOnlineMode` variable (`'battle'`, `'speed'`, or `'team'`). The shared `#online-searching / #online-ready / #online-countdown` screens are reused for all three modes; at countdown end, `currentOnlineMode` decides whether to call `olStartGame()`, `spStartGame()`, or `teamStartGame()`.
+
+**Team Battle shared state (no schema change):** Team mode stores all shared game state in the `p1_*` columns (p1_castle, p1_army, p1_gold). The `p1_army` column is repurposed as a JSON blob: `{ _co: true, army, enemies, waveIdx, wavesDone, lastApproachReset, ts }`. When either player posts a state update, they use `event_type: 'co_state'` which forces the API to always write to `p1_*` regardless of slot. Both players read `p1_army` on every poll. Last write wins — occasional micro-conflicts are acceptable. Winner posted as `"TEAM"` (co-op win) or `"ENEMY"` (castle fell).
 
 ---
 
@@ -193,11 +197,30 @@ speed = {
 }
 ```
 
+### Team Battle state (`team` object)
+```js
+team = {
+  playerId, playerName, slot, roomId, opponentName,
+  // shared with teammate (synced via server):
+  castle, maxCastle,
+  army,              // shared warrior array
+  gold,              // shared gold
+  enemies,           // current wave's enemies (shared)
+  waveIdx,           // 0, 1, or 2 (current wave)
+  wavesDone,         // 0, 1, 2, or 3 (waves completed)
+  lastApproachReset, // timestamp — used to sync approach timer reset across clients
+  lastReadTs,        // timestamp of last state blob we consumed from server
+  panelOpen, action, recruitStep, uidCounter,
+  pollInterval, gameOver,
+  approachVal, approachMax, approachInterval,
+}
+```
+
 ### Mode tracking
 ```js
-let currentOnlineMode = 'battle'; // or 'speed'
+let currentOnlineMode = 'battle'; // or 'speed' or 'team'
 ```
-Set to `'speed'` in `speedSearch()`, reset to `'battle'` in `onlineCancelSearch()` and after game ends.
+Set to `'speed'` in `speedSearch()`, `'team'` in `teamSearch()`, reset to `'battle'` in `onlineCancelSearch()` and after game ends.
 
 ### Persistent state (localStorage)
 ```js

@@ -344,3 +344,31 @@ He built something real, deployed it to the internet, and his friends played it.
 *Built in June 2026. Aditya was 10 years old.*
 *Live at: https://speedmath-gamma.vercel.app*
 *Source: https://github.com/AnandGurumurthi/speedmath*
+
+---
+
+## Session 4 — The Team Battle
+
+Aditya came back with an idea he'd been sitting on since the last session.
+
+> **Aditya:** "arent there 4 files?"
+
+He'd noticed. He was checking.
+
+Then, after getting context:
+
+> **Aditya:** "last time i mentioned a team battle. my ideas for the team battle online was that 2 people online work together to defeat 3 waves. in these 3 waves if damage is taken both people see that the damage was taken but if damage given the same thing happens. both people try to win but since it is 2 people working together the enemies have more health and are harder to defeat"
+
+One paragraph. A fully-formed game mode.
+
+Two players. One castle. One army. One gold pile. Shared enemies with scaled HP. Both attacking simultaneously. Not against each other — with each other.
+
+When asked about the details — is the castle shared, is the army shared, do they attack together?
+
+> **Aditya:** "everything is shared and both players are battling simultaneously and the option for online team battle should be on the main selection screen"
+
+That was the spec. That was enough.
+
+v1.4 — **Online Team Battle** — built exactly as described. The teal 🤝 button appeared on the main menu. Three waves of stronger enemies (Knights, Beasts, Bosses — all with 1.5× HP). A shared castle at 150 HP, a shared army starting with 3 Soldiers, 50 shared gold. Both players see every hit, every kill, every wave transition in real time.
+
+The same co-op feeling Aditya described in words became a real game mode on the internet.

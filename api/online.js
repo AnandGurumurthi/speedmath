@@ -38,6 +38,7 @@ module.exports = async function handler(req, res) {
     if (action === 'search') {
       const { player_id, player_name } = params;
       const isSpeed = player_id.startsWith('sp-');
+      const isCo = player_id.startsWith('co-');
 
       // Clean stale entries older than 90s
       await sb('DELETE', `/online_queue?created_at=lt.${new Date(Date.now() - 90000).toISOString()}`);
@@ -45,10 +46,12 @@ module.exports = async function handler(req, res) {
       // Remove any existing entry for this player
       await sb('DELETE', `/online_queue?player_id=eq.${player_id}`);
 
-      // Look for someone else searching — speed players only match with speed players
+      // Look for someone else searching — players only match within their mode
       const modeFilter = isSpeed
         ? `player_id=like.sp-*&player_id=neq.${encodeURIComponent(player_id)}`
-        : `player_id=not.like.sp-*&player_id=neq.${encodeURIComponent(player_id)}`;
+        : isCo
+          ? `player_id=like.co-*&player_id=neq.${encodeURIComponent(player_id)}`
+          : `player_id=not.like.sp-*&player_id=not.like.co-*&player_id=neq.${encodeURIComponent(player_id)}`;
       const queue = await sb('GET', `/online_queue?room_id=is.null&${modeFilter}&limit=1`);
 
       if (queue && queue.length > 0) {
@@ -129,7 +132,7 @@ module.exports = async function handler(req, res) {
     // ── EVENT: player posts an action result ─────────────────────────────
     else if (action === 'event') {
       const { room_id, slot, event_type, data, my_state } = params;
-      const prefix = slot == 1 ? 'p1' : 'p2';
+      const prefix = event_type === 'co_state' ? 'p1' : (slot == 1 ? 'p1' : 'p2');
       const updates = {
         pending_event: { actor_slot: slot, event_type, data, ts: Date.now() },
         [`${prefix}_castle`]: my_state.castle,
